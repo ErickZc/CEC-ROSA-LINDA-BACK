@@ -4,59 +4,61 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Usuario;
+use App\Models\Persona;
+use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function index()
     {
         return Usuario::all();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+
     public function store(Request $request)
     {
         //
     }
+  
+     public function login(Request $request)
+     {
+         $correo = $request->input('correo');
+         $pass = $request->input('password');
+     
+         //$usuario = Usuario::where('correo', $correo)->first();
+         $usuario = Usuario::with('persona')->where('correo', $correo)->first();
+     
+         if (!$usuario) {
+             return response()->json([
+                 'message' => 'El usuario no existe'
+             ], 404);
+         }
+     
+         if ($usuario->estado !== 'ACTIVO') {
+             return response()->json([
+                 'message' => 'El usuario no está activo'
+             ], 403); // 403 Forbidden
+         }
+     
+         if ($pass !== $usuario->password) {
+             return response()->json([
+                 'message' => 'Contraseña incorrecta'
+             ], 401);
+         }
+     
+         return response()->json([
+             'message' => 'Inicio de sesión exitoso',
+             'usuario' => $usuario
+         ], 200);
+     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
     {
         //
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
         //
