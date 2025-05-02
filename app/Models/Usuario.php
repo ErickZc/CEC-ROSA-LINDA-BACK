@@ -10,7 +10,11 @@ class Usuario extends Model
 {
     use HasFactory;
     protected $table = 'Usuario';
+    protected $primaryKey = 'id_usuario';
     protected $fillable = ['id_usuario', 'usuario','password','correo','id_rol','id_persona','estado'];
+
+    // Deshabilitar los timestamps
+    public $timestamps = false;
 
     public function persona()
     {
