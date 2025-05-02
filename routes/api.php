@@ -31,10 +31,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
-
-
-
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
     
@@ -51,6 +47,9 @@ Route::middleware('api.key')->group(function () {
     Route::get('/notas', [NotaController::class, 'index']);
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
+
+    //Ruta para insertar registros
+    Route::post('/usuarios', [UsuarioController::class, 'store']);
 
     // Rutas para el login
     Route::post('/login', [UsuarioController::class, 'login']);
