@@ -27,7 +27,23 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'usuario' => 'required|string',
+            'password' => 'required|string|confirmed',
+            'correo' => 'required|email|unique:usuarios,correo',
+            'id_rol' => 'required|exists:roles,id',
+            'id_persona' => 'required|exists:personas,id',
+        ]);
+
+        $usuario = new Usuario();
+        $usuario->usuario = $request->usuario;
+        $usuario->password = bcrypt($request->password);
+        $usuario->correo = $request->correo;
+        $usuario->id_rol = $request->id_rol;
+        $usuario->id_persona = $request->id_persona;
+        $usuario->save();
+
+        return response()->json(['message' => 'Usuario creado con éxito'], 201);
     }
   
      public function login(Request $request)
