@@ -10,9 +10,18 @@ use Illuminate\Support\Facades\Hash;
 class UsuarioController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        return Usuario::all();
+        // Obtener el parámetro de búsqueda, si existe
+        $search = $request->input('search', '');
+
+        // Filtrar los usuarios según el parámetro de búsqueda
+        $usuarios = Usuario::where('usuario', 'like', "%{$search}%")
+                            ->orWhere('correo', 'like', "%{$search}%")
+                            ->paginate(10);
+
+        // Devolver los usuarios paginados
+        return response()->json($usuarios);
     }
 
 

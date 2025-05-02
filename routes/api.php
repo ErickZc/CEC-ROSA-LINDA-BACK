@@ -31,10 +31,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
-
-
-
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
     
