@@ -51,6 +51,12 @@ Route::middleware('api.key')->group(function () {
     //Ruta para insertar registros
     Route::post('/usuarios', [UsuarioController::class, 'store']);
 
+    //Ruta para eliminar registros
+    Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy']);
+
+    //Ruta para editar registros
+    Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
+
     // Rutas para el login
     Route::post('/login', [UsuarioController::class, 'login']);
     Route::get('/test', function () {

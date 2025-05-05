@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Usuario;
-use App\Models\Persona;
 use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
@@ -16,7 +15,8 @@ class UsuarioController extends Controller
         $search = $request->input('search', '');
 
         // Filtrar los usuarios según el parámetro de búsqueda
-        $usuarios = Usuario::where('usuario', 'like', "%{$search}%")
+        $usuarios = Usuario::with('rol')
+                            ->where('usuario', 'like', "%{$search}%")
                             ->orWhere('correo', 'like', "%{$search}%")
                             ->paginate(10);
 
@@ -27,23 +27,17 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'usuario' => 'required|string',
-            'password' => 'required|string|confirmed',
-            'correo' => 'required|email|unique:usuarios,correo',
-            'id_rol' => 'required|exists:roles,id',
-            'id_persona' => 'required|exists:personas,id',
+        // Crear usuario sin validaciones
+        $usuario = Usuario::create([
+            'usuario' => $request->usuario,
+            'password' => Hash::make($request->password),
+            'correo' => $request->correo,
+            'id_rol' => $request->id_rol,
+            'id_persona' => $request->id_persona,
+            'estado' => 'activo',  // Puedes poner un valor por defecto si es necesario
         ]);
 
-        $usuario = new Usuario();
-        $usuario->usuario = $request->usuario;
-        $usuario->password = bcrypt($request->password);
-        $usuario->correo = $request->correo;
-        $usuario->id_rol = $request->id_rol;
-        $usuario->id_persona = $request->id_persona;
-        $usuario->save();
-
-        return response()->json(['message' => 'Usuario creado con éxito'], 201);
+        return response()->json($usuario, 201);
     }
   
      public function login(Request $request)
@@ -78,14 +72,41 @@ class UsuarioController extends Controller
          ], 200);
      }
 
-    public function update(Request $request, $id)
-    {
-        //
-    }
+     public function update(Request $request, $id)
+     {
+         // Buscar usuario
+         $usuario = Usuario::find($id);
+         if (!$usuario) {
+             return response()->json(['message' => 'Usuario no encontrado'], 404);
+         }
+     
+         // Asignar valores directamente desde el request
+         $usuario->usuario = $request->input('usuario');
+         $usuario->correo = $request->input('correo');
+         $usuario->id_rol = $request->input('id_rol');
+         $usuario->id_persona = $request->input('id_persona');
+     
+         // Verificar si se envió la contraseña y no está vacía
+         if ($request->filled('password')) {
+             $usuario->password = Hash::make($request->input('password'));
+         }
+     
+         $usuario->save();
+     
+         return response()->json(['message' => 'Usuario actualizado correctamente', 'usuario' => $usuario], 200);
+     }
 
 
     public function destroy($id)
     {
-        //
+        $usuario = Usuario::find($id);
+
+        if (!$usuario) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
+
+        $usuario->delete();
+
+        return response()->json(['message' => 'Usuario eliminado correctamente']);
     }
 }
