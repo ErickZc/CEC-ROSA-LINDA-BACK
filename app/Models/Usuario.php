@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Persona;
+use App\Models\RolUsuario;
 
 class Usuario extends Model
 {
@@ -19,6 +20,11 @@ class Usuario extends Model
     public function persona()
     {
         return $this->belongsTo(Persona::class, 'id_persona');
+    }
+
+    public function rol()
+    {
+        return $this->belongsTo(RolUsuario::class, 'id_rol');
     }
 
 

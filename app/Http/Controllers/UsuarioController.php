@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Usuario;
-use App\Models\Persona;
 use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
@@ -16,7 +15,8 @@ class UsuarioController extends Controller
         $search = $request->input('search', '');
 
         // Filtrar los usuarios según el parámetro de búsqueda
-        $usuarios = Usuario::where('usuario', 'like', "%{$search}%")
+        $usuarios = Usuario::with('rol')
+                            ->where('usuario', 'like', "%{$search}%")
                             ->orWhere('correo', 'like', "%{$search}%")
                             ->paginate(10);
 
