@@ -15,6 +15,7 @@ use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\NotaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\InasistenciaController;
+use App\Http\Controllers\RecoveryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,8 @@ use App\Http\Controllers\InasistenciaController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/send-otp', [RecoveryController::class, 'sendOTP']);
 
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
@@ -62,5 +65,13 @@ Route::middleware('api.key')->group(function () {
     Route::get('/test', function () {
         return response()->json(['message' => 'API funcionando correctamente']);
     });
+
+    // Ruta para envio de correos - Token OTP
+    Route::post('/enviar-otp', [RecoveryController::class, 'sendOTP']);
+
+    // Ruta para validar existencia de un correo
+    Route::post('/validarCorreo', [UsuarioController::class, 'validarCorreo']);
+
+    Route::post('/actualizar-credenciales', [UsuarioController::class, 'actualizarCredenciales']);
 
 });
