@@ -74,4 +74,8 @@ Route::middleware('api.key')->group(function () {
 
     Route::post('/actualizar-credenciales', [UsuarioController::class, 'actualizarCredenciales']);
 
+
+    //Reportes
+    Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
+
 });

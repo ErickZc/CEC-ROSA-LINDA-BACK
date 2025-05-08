@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Usuario;
+use App\Models\RolUsuario;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UsuarioController extends Controller
 {
@@ -150,4 +152,31 @@ class UsuarioController extends Controller
 
         return response()->json(['message' => 'Usuario eliminado correctamente']);
     }
+
+    public function usuariosPorRol()
+    {
+        try {
+            $roles = RolUsuario::withCount('usuarios')->get();
+
+            $result = $roles->map(function ($rol) {
+                return [
+                    'rol' => $rol->rol,
+                    'total' => $rol->usuarios_count
+                ];
+            });
+
+            return response()->json([
+                'message' => 'Usuarios agrupados por rol obtenidos con éxito',
+                'data' => $result
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener los usuarios por rol',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 }
