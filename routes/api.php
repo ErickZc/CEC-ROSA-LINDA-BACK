@@ -77,5 +77,6 @@ Route::middleware('api.key')->group(function () {
 
     //Reportes
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
+    Route::get('/totalUsuarios', [UsuarioController::class, 'totalUsuarios']);
 
 });

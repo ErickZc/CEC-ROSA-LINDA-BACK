@@ -178,5 +178,24 @@ class UsuarioController extends Controller
         }
     }
 
+    public function totalUsuarios()
+{
+    try {
+        $total = \App\Models\Usuario::count(); // Asegúrate de que el modelo Usuario esté bien referenciado
+
+        return response()->json([
+            'message' => 'Total de usuarios obtenido con éxito',
+            'data' => ['total' => $total]
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error al obtener el total de usuarios',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 
 }
