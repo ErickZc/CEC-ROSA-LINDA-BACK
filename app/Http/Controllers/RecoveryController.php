@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Carbon;
 
 class RecoveryController extends Controller
 {
@@ -11,6 +13,7 @@ class RecoveryController extends Controller
     {
         $otp = rand(1000, 9999); // OTP aleatorio
         $recipient_email = $request->correo;
+        $id_usuario = $request->id_usuario;
 
         $htmlContent = "
             <p>Hola,</p>
@@ -25,10 +28,18 @@ class RecoveryController extends Controller
                     ->subject('Código de verificación OTP');
         });
 
-        return response()->json([
-            'message' => 'OTP enviado correctamente a ' . $recipient_email,
-            'otp' => $otp // mostrar solo para pruebas, remueve en producción
+        $otp = Otp::create([
+            'codigo' => $otp,
+            'fecha_hora' => Carbon::now(),
+            'id_usuario' => $id_usuario
         ]);
+
+        return response()->json([
+            'message' => 'OTP enviado correctamente a ' . $recipient_email
+            //'otp' => $otp // mostrar solo para pruebas, remueve en producción
+        ]);
+
+        
     }
 
 }
