@@ -17,6 +17,7 @@ use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,4 +87,7 @@ Route::middleware('api.key')->group(function () {
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
     Route::get('/totalUsuarios', [UsuarioController::class, 'totalUsuarios']);
 
+
+    // Rutas para el chat
+    Route::post('/chatbot', [ChatController::class, 'chatbot']);
 });
