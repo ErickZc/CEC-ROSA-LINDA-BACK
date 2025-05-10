@@ -81,4 +81,9 @@ Route::middleware('api.key')->group(function () {
 
     Route::post('/send-otp', [RecoveryController::class, 'sendOTP']);
 
+
+    //Reportes
+    Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
+    Route::get('/totalUsuarios', [UsuarioController::class, 'totalUsuarios']);
+
 });
