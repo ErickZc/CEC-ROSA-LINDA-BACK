@@ -19,8 +19,9 @@ class ChatController extends Controller
 
         try {
             // Leer los archivos de temas y respuestas
-            $temas = file(storage_path('app/public/temas_escolares.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $respuestas = file(storage_path('app/public/respuestas.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $temas = file(public_path('temas_escolares.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $respuestas = file(public_path('respuestas.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
 
             // Validar que ambos tengan la misma cantidad de líneas
             if (count($temas) !== count($respuestas)) {
@@ -50,7 +51,7 @@ class ChatController extends Controller
     {
         try {
             // Cargar el archivo de temas
-            $temas = Storage::disk('public')->get('temas_escolares.txt');
+            $temas = file_get_contents(public_path('temas_escolares.txt'));
             
             // Devolver los temas como respuesta JSON
             return response()->json(['temas' => $temas]);
