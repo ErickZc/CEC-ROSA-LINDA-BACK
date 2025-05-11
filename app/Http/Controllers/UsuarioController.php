@@ -204,7 +204,4 @@ class UsuarioController extends Controller
         ], 500);
     }
 }
-
-
-
 }
