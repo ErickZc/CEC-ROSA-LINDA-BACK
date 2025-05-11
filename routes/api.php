@@ -50,6 +50,7 @@ Route::middleware('api.key')->group(function () {
     Route::get('/notas', [NotaController::class, 'index']);
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
+    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
 
     //Ruta para insertar registros
     Route::post('/usuarios', [UsuarioController::class, 'store']);
