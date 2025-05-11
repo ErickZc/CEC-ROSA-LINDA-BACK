@@ -11,4 +11,7 @@ class Persona extends Model
     protected $table = 'Persona';
     protected $fillable = ['id_persona', 'nombre', 'apellido', 'direccion', 'telefono', 'genero', 'fecha_creacion'];
     protected $primaryKey = 'id_persona';
+
+    // Deshabilitar los timestamps
+    public $timestamps = false;
 }

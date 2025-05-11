@@ -9,5 +9,8 @@ class Seccion extends Model
 {
     use HasFactory;
     protected $table = 'Seccion';
+    protected $primaryKey = 'id_seccion';
     protected $fillable = ['id_seccion', 'seccion', 'estado'];
+
+    public $timestamps = false;
 }

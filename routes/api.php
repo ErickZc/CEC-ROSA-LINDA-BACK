@@ -40,27 +40,26 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('api.key')->group(function () {
     
     Route::get('/docentes', [DocenteController::class, 'index']);
-    Route::get('/personas', [PersonaController::class, 'index']);
+    Route::resource('/personas', PersonaController::class)->except(['show']);
     Route::get('/roles', [RolUsuarioController::class, 'index']);
-    Route::get('/secciones', [SeccionController::class, 'index']);
-    Route::get('/grados', [GradoController::class, 'index']);
-    Route::get('/usuarios', [UsuarioController::class, 'index']);
-    Route::get('/estudiantes', [EstudianteController::class, 'index']);
+    Route::resource('/secciones', SeccionController::class)->except(['show']);
+    Route::resource('/grados', GradoController::class)->except(['show']);
+    Route::resource('/usuarios', UsuarioController::class)->except(['show']);
+    Route::resource('/estudiantes', EstudianteController::class)->except(['show']);
+    //Route::get('/estudiantes', [EstudianteController::class, 'index']);
     Route::get('/historial', [HistorialEstudianteController::class, 'index']);
-    Route::get('/materias', [MateriaController::class, 'index']);
+    Route::resource('/materias', MateriaController::class)->except(['show']);
     Route::get('/periodos', [PeriodoController::class, 'index']);
     Route::get('/notas', [NotaController::class, 'index']);
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
+    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
 
-    //Ruta para insertar registros
-    Route::post('/usuarios', [UsuarioController::class, 'store']);
+    
+    //Ruta para cargar select
+    Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
+    Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
 
-    //Ruta para eliminar registros
-    Route::delete('/usuarios/{id}', [UsuarioController::class, 'destroy']);
-
-    //Ruta para editar registros
-    Route::put('/usuarios/{id}', [UsuarioController::class, 'update']);
 
     // Rutas para el login
     Route::post('/login', [UsuarioController::class, 'login']);
@@ -82,7 +81,7 @@ Route::middleware('api.key')->group(function () {
 
     Route::post('/send-otp', [RecoveryController::class, 'sendOTP']);
 
-
+    Route::post('/emailCambioPassword', [RecoveryController::class, 'emailCambioPassword']);
     //Reportes
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
     Route::get('/totalUsuarios', [UsuarioController::class, 'totalUsuarios']);
