@@ -90,4 +90,5 @@ Route::middleware('api.key')->group(function () {
 
     // Rutas para el chat
     Route::post('/chatbot', [ChatController::class, 'chatbot']);
+    Route::get('/chatbot/temas', [ChatController::class, 'temas']);
 });
