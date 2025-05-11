@@ -12,6 +12,10 @@ class MateriaController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function allMaterias(){
+        return Materia::all();
+    }
+
     public function index(Request $request)
     {
         // Obtener el parámetro de búsqueda, si existe

@@ -59,6 +59,7 @@ Route::middleware('api.key')->group(function () {
     //Ruta para cargar select
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
+    Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
 
 
     // Rutas para el login
