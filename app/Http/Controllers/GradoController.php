@@ -14,7 +14,9 @@ class GradoController extends Controller
      */
     public function index()
     {
-        return Grado::all();
+        $grado = Grado::with('seccion')->where('estado','ACTIVO')->get();
+
+        return response()->json($grado);
     }
 
     /**
