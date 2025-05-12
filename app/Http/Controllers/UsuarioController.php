@@ -29,17 +29,26 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        // Crear usuario sin validaciones
-        $usuario = Usuario::create([
-            'usuario' => $request->usuario,
-            'password' => Hash::make($request->password),
-            'correo' => $request->correo,
-            'id_rol' => $request->id_rol,
-            'id_persona' => $request->id_persona,
-            'estado' => 'activo',  // Puedes poner un valor por defecto si es necesario
+        $validated = $request->validate([
+            'correo' => 'required|email|unique:Usuario,correo', // Valida correo único
+            'usuario' => 'required|string|unique:Usuario,usuario', // Valida nombre de usuario único
+            'password' => 'required|string',
+            'id_rol' => 'required|integer',
+            'id_persona' => 'required|integer',
         ]);
 
-        return response()->json($usuario, 201);
+        $usuario = Usuario::create([
+            'usuario' => $validated['usuario'],
+            'password' => Hash::make($validated['password']),
+            'correo' => $validated['correo'],
+            'id_rol' => $validated['id_rol'],
+            'id_persona' => $validated['id_persona']
+        ]);
+
+        return response()->json([
+            'message' => 'Usuario creado correctamente',
+            'data' => $usuario
+        ]);
     }
   
     public function login(Request $request)
@@ -179,22 +188,22 @@ class UsuarioController extends Controller
     }
 
     public function totalUsuarios()
-{
-    try {
-        $total = \App\Models\Usuario::count(); // Asegúrate de que el modelo Usuario esté bien referenciado
+    {
+        try {
+            $total = \App\Models\Usuario::count(); // Asegúrate de que el modelo Usuario esté bien referenciado
 
-        return response()->json([
-            'message' => 'Total de usuarios obtenido con éxito',
-            'data' => ['total' => $total]
-        ], 200);
+            return response()->json([
+                'message' => 'Total de usuarios obtenido con éxito',
+                'data' => ['total' => $total]
+            ], 200);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Error al obtener el total de usuarios',
-            'error' => $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener el total de usuarios',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 
 
 

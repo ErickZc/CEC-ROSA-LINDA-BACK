@@ -10,14 +10,15 @@ class Grado extends Model
 {
     use HasFactory;
     protected $table = 'Grado';
-    protected $fillable = ['id_grado', 'grado', 'id_seccion', 'cantidad_alumnos', 'estado'];
     protected $primaryKey = 'id_grado';
+    protected $fillable = ['id_grado', 'grado', 'id_seccion', 'cantidad_alumnos', 'estado'];
 
-    // Deshabilitar los timestamps
     public $timestamps = false;
 
     public function seccion()
     {
         return $this->belongsTo(Seccion::class, 'id_seccion');
     }
+
+
 }

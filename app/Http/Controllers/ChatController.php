@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
@@ -16,59 +17,49 @@ class ChatController extends Controller
             return response()->json(['error' => 'Falta el mensaje del usuario'], 400);
         }
 
-        $apiKey = env('API_KEY_CHATBOT');
-        if (!$apiKey) {
-            return response()->json(['error' => 'API Key no configurada'], 500);
-        }
-
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey;
-
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])
-            ->withOptions([
-                'verify' => false, // ⚠️ Solo en desarrollo
-            ])
-            ->post($url . '?key=' . $apiKey, [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => $userMessage]
-                        ]
-                    ]
-                ]
-            ]);
-
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])
-            ->withOptions([
-                'verify' => false, // ⚠️ Solo en desarrollo
-            ])
-            ->post($url, [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => $userMessage]
-                        ]
-                    ]
-                ]
-            ]);
+            // Leer los archivos de temas y respuestas
+            $temas = file(public_path('temas_escolares.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $respuestas = file(public_path('respuestas.txt'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
 
-            if ($response->successful()) {
-                $data = $response->json();
-                $reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? 'Sin respuesta';
-                return response()->json(['reply' => $reply]);
+            // Validar que ambos tengan la misma cantidad de líneas
+            if (count($temas) !== count($respuestas)) {
+                return response()->json(['error' => 'Los archivos de temas y respuestas no coinciden en longitud.'], 500);
             }
 
-            return response()->json(['error' => 'Respuesta no exitosa del API', 'details' => $response->body()], 500);
+            // Normalizar el mensaje del usuario
+            $userMessageNormalized = strtolower(trim($userMessage));
+            $responseMessage = 'Lo siento, no tengo información sobre eso.';
+
+            foreach ($temas as $index => $tema) {
+                if (stripos(strtolower($tema), $userMessageNormalized) !== false) {
+                    $responseMessage = "Aquí tienes la información sobre el tema:<br>" . $respuestas[$index];
+                    break;
+                }
+            }
+
+            return response()->json(['reply' => $responseMessage]);
+
         } catch (\Exception $e) {
-            Log::error('Error al contactar a Gemini:', ['error' => $e->getMessage()]);
+            Log::error('Error al procesar el chatbot:', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Excepción: ' . $e->getMessage()], 500);
         }
     }
+
+    public function temas()
+    {
+        try {
+            // Cargar el archivo de temas
+            $temas = file_get_contents(public_path('temas_escolares.txt'));
+            
+            // Devolver los temas como respuesta JSON
+            return response()->json(['temas' => $temas]);
+        } catch (\Exception $e) {
+            // Manejar errores
+            return response()->json(['error' => 'No se pudo cargar el contenido del archivo.'], 500);
+        }
+    }
+
+
 }

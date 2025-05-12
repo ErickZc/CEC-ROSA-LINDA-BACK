@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Grado;
+use App\Models\Seccion;
 
 class GradoController extends Controller
 {
@@ -12,7 +13,25 @@ class GradoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function allSecciones(Request $request)
+    {
+        return Seccion::all();
+    }
+
+    public function index(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $search = $request->input('search', '');
+
+        // Filtrar los usuarios según el parámetro de búsqueda
+        $secciones = Grado::with('seccion')
+                            ->where('grado', 'like', "%{$search}%")
+                            ->paginate(10);
+
+        return response()->json($secciones);
+    }
+
+    public function gradosList()
     {
         $grado = Grado::with('seccion')->where('estado','ACTIVO')->get();
 
@@ -27,7 +46,24 @@ class GradoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'grado' => 'required|string|max:100',
+            'id_seccion' => 'required|exists:Seccion,id_seccion',
+            'cantidad_alumnos' => 'nullable|integer|min:0',
+            'estado' => 'nullable|in:ACTIVO,INACTIVO',
+        ]);
+
+        $grado = Grado::create([
+            'grado' => $validated['grado'],
+            'id_seccion' => $validated['id_seccion'],
+            'cantidad_alumnos' => $validated['cantidad_alumnos'] ?? 0,
+            'estado' => $validated['estado'] ?? 'ACTIVO',
+        ]);
+
+        return response()->json([
+            'message' => 'Grado creado correctamente',
+            'data' => $grado
+        ], 201);
     }
 
     /**
@@ -50,7 +86,25 @@ class GradoController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+         $grado = Grado::find($id);
+
+        if (!$grado) {
+            return response()->json(['message' => 'Grado no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'grado' => 'required|string|max:100',
+            'id_seccion' => 'required|exists:Seccion,id_seccion',
+            'cantidad_alumnos' => 'nullable|integer|min:0',
+            'estado' => 'required|in:ACTIVO,INACTIVO',
+        ]);
+
+        $grado->update($validated);
+
+        return response()->json([
+            'message' => 'Grado actualizado correctamente',
+            'data' => $grado
+        ]);
     }
 
     /**
@@ -61,6 +115,14 @@ class GradoController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $grado = Grado::find($id);
+
+        if (!$grado) {
+            return response()->json(['message' => 'Grado no encontrado'], 404);
+        }
+
+        $grado->delete();
+
+        return response()->json(['message' => 'Grado eliminado correctamente']);
     }
 }
