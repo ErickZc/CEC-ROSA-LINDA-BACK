@@ -56,7 +56,7 @@ Route::middleware('api.key')->group(function () {
     Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
     Route::get('/reporte-inasistencias-count', [InasistenciaController::class, 'getInasistenciaCount']);
     Route::get('/reporte-inasistencias-days', [InasistenciaController::class, 'getInasistenciaByDays']);
-    
+    Route::get('/gradosList', [GradoController::class, 'gradosList']);
     
     //Ruta para cargar select
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
