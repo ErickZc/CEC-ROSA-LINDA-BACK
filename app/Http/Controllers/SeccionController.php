@@ -12,13 +12,19 @@ class SeccionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
+    public function allSecciones(){
+        return Seccion::all();
+    }
+
     public function index(Request $request)
     {
         // Obtener el parámetro de búsqueda, si existe
         $search = $request->input('search', '');
 
         // Filtrar los usuarios según el parámetro de búsqueda
-        $secciones = Seccion::where('seccion', 'like', "%{$search}%")
+        $secciones = Seccion::where('estado', 'ACTIVO')
+                            ->where('seccion', 'like', "%{$search}%")
                             ->paginate(5);
 
         return response()->json($secciones);
@@ -32,18 +38,27 @@ class SeccionController extends Controller
      */
     public function store(Request $request)
     {
+        $seccionExistente = Seccion::where('seccion', $request->input('seccion'))->where('estado', 'ACTIVO')->first();
+
+        if ($seccionExistente) {
+            return response()->json([
+                'message' => 'La sección ya existe y está activa.'
+            ], 422);
+        }
+
+        // Si no existe activa, permitir crearla
         $validated = $request->validate([
-            'seccion' => 'required|string|max:50|unique:Seccion,seccion', // nombre requerido y único
+            'seccion' => 'required|string|max:50',
             'estado' => 'nullable|in:ACTIVO,INACTIVO'
         ]);
 
         $seccion = Seccion::create([
             'seccion' => $validated['seccion'],
-            'estado' => $validated['estado'] ?? 'ACTIVO' // si no se manda, pone por defecto ACTIVO
+            'estado' => $validated['estado'] ?? 'ACTIVO'
         ]);
 
         return response()->json([
-            'message' => 'Seccion creada correctamente',
+            'message' => 'Sección creada correctamente',
             'data' => $seccion
         ]);
     }
@@ -68,7 +83,6 @@ class SeccionController extends Controller
      */
     public function update(Request $request, $id)
     {   
-         // Buscar la materia
         $seccion = Seccion::find($id);
         if (!$seccion) {
             return response()->json(['message' => 'Seccion no encontrada'], 404);
@@ -104,11 +118,12 @@ class SeccionController extends Controller
         $seccion = Seccion::find($id);
 
         if (!$seccion) {
-            return response()->json(['message' => 'Seccion no encontrada'], 404);
+            return response()->json(['message' => 'Sección no encontrada'], 404);
         }
 
-        $seccion->delete();
+        $seccion->estado = 'INACTIVO';
+        $seccion->save();
 
-        return response()->json(['message' => 'Seccion eliminada correctamente']);
+        return response()->json(['message' => 'Sección eliminada correctamente']);
     }
 }

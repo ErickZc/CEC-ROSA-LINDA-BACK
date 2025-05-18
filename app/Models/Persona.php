@@ -14,4 +14,14 @@ class Persona extends Model
 
     // Deshabilitar los timestamps
     public $timestamps = false;
+
+    public function usuario()
+    {
+        return $this->hasOne(Usuario::class, 'id_persona');
+    }
+
+    public function docente()
+    {
+        return $this->hasOne(Docente::class, 'id_persona');
+    }
 }
