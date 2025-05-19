@@ -2,53 +2,100 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Persona;
+use App\Models\Docente;
+use App\Models\Estudiante;
 use App\Models\Usuario;
 use App\Models\RolUsuario;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UsuarioController extends Controller
 {
-
-    public function index(Request $request)
+    public function allUsuarios()
     {
-        // Obtener el parámetro de búsqueda, si existe
+        return Usuario::all();
+    }
+
+    public function index(Request $request,  $idRol)
+    {
         $search = $request->input('search', '');
 
-        // Filtrar los usuarios según el parámetro de búsqueda
-        $usuarios = Usuario::with('rol')
-                            ->where('usuario', 'like', "%{$search}%")
-                            ->orWhere('correo', 'like', "%{$search}%")
-                            ->paginate(10);
+        $usuarios = Usuario::with(['rol', 'persona'])
+            ->where('estado', 'ACTIVO')
+            ->where('id_rol', $idRol)
+            ->where(function ($query) use ($search) {
+                $query->where('usuario', 'like', "%{$search}%")
+                    ->orWhere('correo', 'like', "%{$search}%")
+                    ->orWhereHas('persona', function ($q) use ($search) {
+                        $q->where('nombre', 'like', "%{$search}%")
+                            ->orWhere('apellido', 'like', "%{$search}%");
+                    });
+            })
+            ->paginate(10);
 
-        // Devolver los usuarios paginados
         return response()->json($usuarios);
     }
 
-
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'correo' => 'required|email|unique:Usuario,correo', // Valida correo único
-            'usuario' => 'required|string|unique:Usuario,usuario', // Valida nombre de usuario único
-            'password' => 'required|string',
-            'id_rol' => 'required|integer',
-            'id_persona' => 'required|integer',
-        ]);
+        // Validación
+        $rules = [
+            'nombre'    => 'required|string|max:50',
+            'apellido'  => 'required|string|max:50',
+            'direccion' => 'nullable|string|max:100',
+            'telefono'  => 'nullable|string|max:15',
+            'genero'    => 'required|in:MASCULINO,FEMENINO,OTRO',
+        ];
 
-        $usuario = Usuario::create([
-            'usuario' => $validated['usuario'],
-            'password' => Hash::make($validated['password']),
-            'correo' => $validated['correo'],
-            'id_rol' => $validated['id_rol'],
-            'id_persona' => $validated['id_persona']
-        ]);
+        // Usuario general
+        $rules['usuario'] = 'required|string|unique:Usuario,usuario';
+        $rules['correo'] = 'required|email|unique:Usuario,correo';
+        $rules['password'] = 'required|string|min:8';
+        $rules['id_rol'] = 'required|in:1,3';
 
-        return response()->json([
-            'message' => 'Usuario creado correctamente',
-            'data' => $usuario
-        ]);
+
+        $validated = Validator::make($request->all(), $rules)->validate();
+
+        DB::beginTransaction();
+
+        try {
+            // Crear la persona
+            $persona = Persona::create([
+                'nombre'    => $validated['nombre'],
+                'apellido'  => $validated['apellido'],
+                'direccion' => $validated['direccion'] ?? null, 
+                'telefono'  => $validated['telefono'] ?? null, 
+                'genero'    => $validated['genero'],
+            ]);
+
+            $usuario = null;
+
+            //Crear el usuario
+            $usuario = Usuario::create([
+                'usuario'   => $validated['usuario'],
+                'password'  => Hash::make($validated['password']),
+                'correo'    => $validated['correo'],
+                'id_rol'    => $validated['id_rol'],
+                'id_persona'=> $persona->id_persona,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuario creado correctamente',
+                'data' => $usuario
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Error al crear usuario',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
   
     public function login(Request $request)
@@ -126,26 +173,40 @@ class UsuarioController extends Controller
 
      public function update(Request $request, $id)
      {
-         // Buscar usuario
-         $usuario = Usuario::find($id);
-         if (!$usuario) {
-             return response()->json(['message' => 'Usuario no encontrado'], 404);
-         }
-     
-         // Asignar valores directamente desde el request
-         $usuario->usuario = $request->input('usuario');
-         $usuario->correo = $request->input('correo');
-         $usuario->id_rol = $request->input('id_rol');
-         $usuario->id_persona = $request->input('id_persona');
-     
-         // Verificar si se envió la contraseña y no está vacía
-         if ($request->filled('password')) {
-             $usuario->password = Hash::make($request->input('password'));
-         }
-     
-         $usuario->save();
-     
-         return response()->json(['message' => 'Usuario actualizado correctamente', 'usuario' => $usuario], 200);
+         $validated = $request->validate([
+            'nombre' => 'required|string',
+            'apellido' => 'required|string',
+            'direccion' => 'nullable|string',
+            'telefono' => 'nullable|string',
+            'genero' => 'required|in:MASCULINO,FEMENINO,OTRO',
+
+            'id_rol' => 'required|integer',
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        // Obtener el usuario con su persona relacionada
+        $usuario = Usuario::with('persona')->findOrFail($id);
+
+        // Actualizar datos en persona
+        $persona = $usuario->persona;
+        $persona->nombre = $validated['nombre'];
+        $persona->apellido = $validated['apellido'];
+        $persona->direccion = $validated['direccion'] ?? $persona->direccion;
+        $persona->telefono = $validated['telefono'] ?? $persona->telefono;
+        $persona->genero = $validated['genero'];
+        $persona->save();
+
+        // Solo actualizar password si viene en el request
+        if (!empty($validated['password'])) {
+            $usuario->password = Hash::make($validated['password']);
+        }
+
+        $usuario->save();
+
+        return response()->json([
+            'message' => 'Usuario y persona actualizados correctamente',
+            'data' => $usuario->load('persona', 'rol'),
+        ]);
      }
 
 
@@ -157,7 +218,8 @@ class UsuarioController extends Controller
             return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
-        $usuario->delete();
+        $usuario->estado = 'INACTIVO';
+        $usuario->save();
 
         return response()->json(['message' => 'Usuario eliminado correctamente']);
     }

@@ -38,13 +38,13 @@ class MateriaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombre_materia' => 'required|string|max:50|unique:Materia,nombre_materia', // nombre requerido y único
+            'nombre_materia' => 'required|string|max:50|unique:Materia,nombre_materia',
             'estado' => 'nullable|in:ACTIVO,INACTIVO'
         ]);
 
         $materia = Materia::create([
             'nombre_materia' => $validated['nombre_materia'],
-            'estado' => $validated['estado'] ?? 'ACTIVO' // si no se manda, pone por defecto ACTIVO
+            'estado' => $validated['estado'] ?? 'ACTIVO'
         ]);
 
         return response()->json([

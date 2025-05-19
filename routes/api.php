@@ -1,23 +1,25 @@
 <?php
 
+use App\Models\Estudiante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DocenteController;
-use App\Http\Controllers\PersonaController;
-use App\Http\Controllers\RolUsuarioController;
-use App\Http\Controllers\SeccionController;
-use App\Http\Controllers\GradoController;
-use App\Http\Controllers\UsuarioController;
-use App\Http\Controllers\EstudianteController;
-use App\Http\Controllers\HistorialEstudianteController;
-use App\Http\Controllers\MateriaController;
-use App\Http\Controllers\PeriodoController;
-use App\Http\Controllers\NotaController;
-use App\Http\Controllers\DocenteMateriaGradoController;
-use App\Http\Controllers\InasistenciaController;
-use App\Http\Controllers\RecoveryController;
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\NotaController;
+use App\Http\Controllers\GradoController;
+use App\Http\Controllers\DocenteController;
+use App\Http\Controllers\MateriaController;
+use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\PersonaController;
+use App\Http\Controllers\SeccionController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\RecoveryController;
+use App\Http\Controllers\EstudianteController;
+use App\Http\Controllers\RolUsuarioController;
+use App\Http\Controllers\ResponsableController;
+use App\Http\Controllers\InasistenciaController;
+use App\Http\Controllers\DocenteMateriaGradoController;
+use App\Http\Controllers\HistorialEstudianteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +41,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
     
-    Route::get('/docentes', [DocenteController::class, 'index']);
+    //Route::get('/docentes', [DocenteController::class, 'index']);
+    Route::resource('/responsables', ResponsableController::class)->except(['show']);
+    Route::resource('/docentes', DocenteController::class)->except(['show']);
     Route::resource('/personas', PersonaController::class)->except(['show']);
     Route::get('/roles', [RolUsuarioController::class, 'index']);
     Route::resource('/secciones', SeccionController::class)->except(['show']);
@@ -59,8 +63,13 @@ Route::middleware('api.key')->group(function () {
     Route::get('/gradosList', [GradoController::class, 'gradosList']);
     
     //Ruta para cargar select
+    Route::get('/usuarios/rol/{idRol}', [UsuarioController::class, 'index']);
+    Route::get('/usuarios/all', [UsuarioController::class, 'allUsuarios']);
+    Route::get('/estudiantes/all', [EstudianteController::class, 'allEstudiantes']);
+    Route::get('/docentes/all', [DocenteController::class, 'allDocentes']);
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
+    Route::get('/seccion/all', [SeccionController::class, 'allSecciones']);
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
 
 

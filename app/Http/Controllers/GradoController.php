@@ -15,7 +15,7 @@ class GradoController extends Controller
      */
     public function allSecciones(Request $request)
     {
-        return Seccion::all();
+        return Seccion::where('estado', 'ACTIVO')->get();
     }
 
     public function index(Request $request)
@@ -25,6 +25,7 @@ class GradoController extends Controller
 
         // Filtrar los usuarios según el parámetro de búsqueda
         $secciones = Grado::with('seccion')
+                            ->where('estado', 'ACTIVO')
                             ->where('grado', 'like', "%{$search}%")
                             ->paginate(10);
 
@@ -121,7 +122,8 @@ class GradoController extends Controller
             return response()->json(['message' => 'Grado no encontrado'], 404);
         }
 
-        $grado->delete();
+        $grado->estado = 'INACTIVO';
+        $grado->save();
 
         return response()->json(['message' => 'Grado eliminado correctamente']);
     }
