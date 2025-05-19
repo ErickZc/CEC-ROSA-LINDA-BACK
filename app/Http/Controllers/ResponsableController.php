@@ -2,37 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Docente;
 use App\Models\Persona;
 use App\Models\Usuario;
+use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
-class DocenteController extends Controller
+class ResponsableController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function allDocentes()
+    public function allEstudiantes()
     {
-        return Docente::all();
+        return Responsable::all();
     }
 
     public function index(Request $request)
     {
         $search = $request->input('search', '');
 
-        $docentes = Docente::with([
-            'persona.usuario.rol'
+        $responsables = Responsable::with([
+            'persona.usuario'
         ])
         ->where('estado', 'ACTIVO')
         ->whereHas('persona', function ($query) use ($search) {
             $query->where('nombre', 'like', "%{$search}%")
-                ->orWhere('dui', 'like', "%{$search}%")
+                ->orWhere('apellido', 'like', "%{$search}%")
                 ->orWhereHas('usuario', function ($q) use ($search) {
                     $q->where('usuario', 'like', "%{$search}%")
                     ->orWhere('correo', 'like', "%{$search}%");
@@ -40,15 +35,9 @@ class DocenteController extends Controller
         })
         ->paginate(10);
 
-        return response()->json($docentes);
+        return response()->json($responsables);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         // Validación
@@ -65,13 +54,9 @@ class DocenteController extends Controller
         $rules['correo'] = 'required|email|unique:Usuario,correo';
         $rules['password'] = 'required|string|min:8';
 
-        // Docente
-        $rules['dui'] = 'required|string|size:10|unique:Docente,dui';
-        $rules['nit'] = 'required|string|size:17|unique:Docente,nit';
-
 
         $validated = Validator::make($request->all(), $rules)->validate();
-        $validated['id_rol'] = 2;
+        $validated['id_rol'] = 4;
 
         DB::beginTransaction();
 
@@ -87,10 +72,8 @@ class DocenteController extends Controller
 
             $usuario = null;
 
-            Docente::create([
+            Responsable::create([
                 'id_persona' => $persona->id_persona,
-                'dui'        => $validated['dui'],
-                'nit'        => $validated['nit'],
                 'estado'     => 'ACTIVO',
             ]);
 
@@ -120,24 +103,6 @@ class DocenteController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
     {
         // Validación
@@ -150,13 +115,11 @@ class DocenteController extends Controller
             
             'password'  => 'nullable|string|min:8',
 
-            'dui'       => 'required|string|size:10|unique:Docente,dui,' . $id . ',id_docente',
-            'nit'       => 'required|string|size:17|unique:Docente,nit,' . $id . ',id_docente',
         ]);
 
         // Obtener al docente y su relación con persona
-        $docente = Docente::findOrFail($id);
-        $persona = $docente->persona;
+        $responsables = Responsable::findOrFail($id);
+        $persona = $responsables->persona;
 
         // Actualizar persona
         $persona->nombre    = $validated['nombre'];
@@ -175,44 +138,33 @@ class DocenteController extends Controller
 
         $usuario->save();
 
-        // Actualizar docente
-        $docente->dui = $validated['dui'];
-        $docente->nit = $validated['nit'];
-        $docente->save();
-
         return response()->json([
-            'message' => 'Docente actualizado correctamente',
+            'message' => 'Encargado actualizado correctamente',
             'data' => [
                 'usuario' => $usuario->load('persona', 'rol'),
-                'docente' => $docente
+                'responsable' => $responsables
             ]
         ]);
 
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
-        $docente = Docente::find($id);
+        $responsables = Responsable::find($id);
 
-        if (!$docente) {
-            return response()->json(['message' => 'Docente no encontrado'], 404);
+        if (!$responsables) {
+            return response()->json(['message' => 'Encargado no encontrado'], 404);
         }
 
-        $docente->estado = 'INACTIVO';
-        $docente->save();
+        $responsables->estado = 'INACTIVO';
+        $responsables->save();
 
-        $usuario = Usuario::where('id_persona', $docente->id_persona)->first();
+        $usuario = Usuario::where('id_persona', $responsables->id_persona)->first();
         if ($usuario && $usuario->estado !== 'INACTIVO') {
             $usuario->estado = 'INACTIVO';
             $usuario->save();
         }
 
-        return response()->json(['message' => 'Docente eliminado correctamente']);
+        return response()->json(['message' => 'Encargado eliminado correctamente']);
     }
 }

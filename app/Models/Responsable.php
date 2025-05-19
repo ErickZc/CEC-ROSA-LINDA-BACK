@@ -4,14 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Persona;
 
-class Estudiante extends Model
+class Responsable extends Model
 {
     use HasFactory;
-    protected $table = 'Estudiante';
-    protected $fillable = ['id_estudiante', 'id_persona', 'correo', 'estado','nie'];
-    protected $primaryKey = 'id_estudiante';
+    protected $table = 'Responsable';
+    protected $fillable = ['id_responsable', 'id_persona', 'estado'];
+    protected $primaryKey = 'id_responsable';
 
     // Deshabilitar los timestamps
     public $timestamps = false;
