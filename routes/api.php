@@ -57,7 +57,8 @@ Route::middleware('api.key')->group(function () {
     Route::get('/reporte-inasistencias-count', [InasistenciaController::class, 'getInasistenciaCount']);
     Route::get('/reporte-inasistencias-days', [InasistenciaController::class, 'getInasistenciaByDays']);
     Route::get('/gradosList', [GradoController::class, 'gradosList']);
-    
+    Route::get('/reporte-inasistencias-default', [InasistenciaController::class, 'getInasistenciaInfoDefault']);
+
     //Ruta para cargar select
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);

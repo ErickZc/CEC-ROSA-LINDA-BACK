@@ -233,4 +233,65 @@ class InasistenciaController extends Controller
             ]
         ]);
     }
+
+    public function getInasistenciaInfoDefault()
+    {
+        $hoy = Carbon::today();
+
+        $inicioSemana = $hoy->copy()->startOfWeek(Carbon::MONDAY);
+
+        if ($hoy->isSaturday() || $hoy->isSunday()) {
+            $finSemana = $inicioSemana->copy()->addDays(4)->endOfDay(); 
+        } else {
+            $finSemana = $inicioSemana->copy()->addDays(4)->endOfDay();
+        }
+
+        // Año actual
+        $inicioAnio = Carbon::now()->startOfYear();
+        $finAnio = Carbon::now()->endOfYear();
+
+        // Total inasistencias en el año
+        $totalAnio = Inasistencia::whereBetween('fecha', [$inicioAnio, $finAnio])->count();
+
+        // Inasistencias en la semana seleccionada
+        $inasistenciasSemana = Inasistencia::with('historialestudiante.grado')
+            ->whereBetween('fecha', [$inicioSemana, $finSemana])
+            ->get();
+
+        $totalSemana = $inasistenciasSemana->count();
+
+        
+        $inasistenciasAgrupadas = $inasistenciasSemana->groupBy(function ($item) {
+            return Carbon::parse($item->fecha)->toDateString();
+        });
+
+        $detallePorDia = [];
+        $fechaActual = $inicioSemana->copy();
+
+        while ($fechaActual->lte($finSemana)) {
+            if ($fechaActual->isWeekday()) {
+                $fechaStr = $fechaActual->toDateString();
+                $cantidad = isset($inasistenciasAgrupadas[$fechaStr])
+                    ? $inasistenciasAgrupadas[$fechaStr]->count()
+                    : 0;
+
+                $detallePorDia[] = [
+                    'fecha' => $fechaStr,
+                    'inasistencias' => $cantidad
+                ];
+            }
+
+            $fechaActual->addDay();
+        }
+
+        return response()->json([
+            'total_anual' => $totalAnio,
+            'total_semana' => $totalSemana,
+            'detalle_por_dia' => $detallePorDia,
+            'rango_semana' => [
+                'desde' => $inicioSemana->toDateString(),
+                'hasta' => $finSemana->toDateString()
+            ]
+        ]);
+    }
 }
