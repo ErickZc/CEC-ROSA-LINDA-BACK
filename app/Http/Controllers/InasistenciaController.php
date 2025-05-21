@@ -241,7 +241,7 @@ class InasistenciaController extends Controller
         $inicioSemana = $hoy->copy()->startOfWeek(Carbon::MONDAY);
 
         if ($hoy->isSaturday() || $hoy->isSunday()) {
-            $finSemana = $inicioSemana->copy()->addDays(4)->endOfDay(); 
+            $finSemana = $inicioSemana->copy()->addDays(4)->endOfDay();
         } else {
             $finSemana = $inicioSemana->copy()->addDays(4)->endOfDay();
         }
@@ -260,7 +260,7 @@ class InasistenciaController extends Controller
 
         $totalSemana = $inasistenciasSemana->count();
 
-        
+
         $inasistenciasAgrupadas = $inasistenciasSemana->groupBy(function ($item) {
             return Carbon::parse($item->fecha)->toDateString();
         });
@@ -284,10 +284,41 @@ class InasistenciaController extends Controller
             $fechaActual->addDay();
         }
 
+        // Agrupación por grado 
+        $ordenGrados = [
+            'Primero',
+            'Segundo',
+            'Tercero',
+            'Cuarto',
+            'Quinto',
+            'Sexto',
+            'Séptimo',
+            'Octavo',
+            'Noveno',
+            '1er Bachillerato',
+            '2do Bachillerato'
+        ];
+
+        $detallePorGrado = $inasistenciasSemana->groupBy(function ($item) {
+            return optional($item->historialestudiante->grado)->grado ?? 'Sin grado';
+        })->map(function ($items, $grado) {
+            return [
+                'grado' => $grado,
+                'inasistencias' => $items->count()
+            ];
+        })
+        ->sortBy(function ($item) use ($ordenGrados) {
+            return array_search($item['grado'], $ordenGrados) !== false
+                ? array_search($item['grado'], $ordenGrados)
+                : PHP_INT_MAX; // Los que no estén en la lista van al final
+        })
+        ->values();
+
         return response()->json([
             'total_anual' => $totalAnio,
             'total_semana' => $totalSemana,
             'detalle_por_dia' => $detallePorDia,
+            'detalle_por_grado' => $detallePorGrado,
             'rango_semana' => [
                 'desde' => $inicioSemana->toDateString(),
                 'hasta' => $finSemana->toDateString()
