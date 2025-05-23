@@ -103,7 +103,7 @@ class UsuarioController extends Controller
         $correo = $request->input('correo');
         $password = $request->input('password');
     
-        $usuario = Usuario::with('persona')->where('correo', $correo)->first();
+        $usuario = Usuario::with(['persona', 'rol'])->where('correo', $correo)->first();
     
         if (!$usuario) {
             return response()->json([
