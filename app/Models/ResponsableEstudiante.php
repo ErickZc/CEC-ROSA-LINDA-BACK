@@ -9,19 +9,18 @@ class ResponsableEstudiante extends Model
 {
     use HasFactory;
     protected $table = 'Responsable_Estudiante';
-    protected $fillable = ['id_responsable_estudiante','id_responsable', 'id_estudiante', 'parentesco', 'estado'];
     protected $primaryKey = 'id_responsable_estudiante';
+    protected $fillable = ['id_responsable_estudiante','id_responsable', 'id_estudiante', 'parentesco', 'estado'];
 
-    // Deshabilitar los timestamps
     public $timestamps = false;
-
-    public function estudiante()
-    {
-        return $this->belongsTo(Estudiante::class, 'id_estudiante');
-    }
 
     public function responsable()
     {
         return $this->belongsTo(Responsable::class, 'id_responsable');
+    }
+
+    public function estudiante()
+    {
+        return $this->belongsTo(Estudiante::class, 'id_estudiante');
     }
 }

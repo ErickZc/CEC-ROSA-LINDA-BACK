@@ -20,5 +20,4 @@ class Grado extends Model
         return $this->belongsTo(Seccion::class, 'id_seccion');
     }
 
-
 }
