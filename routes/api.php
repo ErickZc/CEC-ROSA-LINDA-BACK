@@ -20,6 +20,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
+use App\Http\Controllers\PermisosController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,8 +36,6 @@ use App\Http\Controllers\HistorialEstudianteController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-
-
 
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
@@ -103,4 +102,9 @@ Route::middleware('api.key')->group(function () {
     // Rutas para el chat
     Route::post('/chatbot', [ChatController::class, 'chatbot']);
     Route::get('/chatbot/temas', [ChatController::class, 'temas']);
+
+    // Rutas para permisos
+    Route::resource('/permisos', PermisosController::class)->except(['show']);
+    Route::post('/permisos/permisosPorResponsable', [PermisosController::class, 'getPermisosByResponsable']);
+    Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
 });
