@@ -30,7 +30,7 @@ class PermisosController extends Controller
         ])
             ->when($responsable, function ($query) use ($responsable) {
                 $query->whereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q) use ($responsable) {
-                    $q->where('id_responsable', $responsable);
+                    $q->where('id_persona', $responsable);
                 });
             })
             ->paginate(10);

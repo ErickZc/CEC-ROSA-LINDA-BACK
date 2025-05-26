@@ -109,4 +109,5 @@ Route::middleware('api.key')->group(function () {
     Route::resource('/permisos', PermisosController::class)->except(['show']);
     Route::post('/permisos/permisosPorResponsable', [PermisosController::class, 'getPermisosByResponsable']);
     Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
+    Route::post('/estudiantes/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesByResponsable']);
 });

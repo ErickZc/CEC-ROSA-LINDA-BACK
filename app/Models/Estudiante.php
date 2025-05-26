@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Persona;
 use App\Models\ResponsableEstudiante;
+use App\Models\HistorialEstudiante;
 
 class Estudiante extends Model
 {
@@ -25,5 +26,14 @@ class Estudiante extends Model
     public function responsableEstudiantes()
     {
         return $this->hasMany(ResponsableEstudiante::class, 'id_estudiante');
+    }
+
+    public function historialEstudianteActual()
+    {
+        $anioActual = date('Y');
+
+        return $this->hasOne(HistorialEstudiante::class, 'id_estudiante', 'id_estudiante')
+            ->where('anio', $anioActual)
+            ->where('estado', 'CURSANDO');
     }
 }

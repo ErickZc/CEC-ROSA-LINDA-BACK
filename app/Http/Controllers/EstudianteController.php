@@ -29,14 +29,42 @@ class EstudianteController extends Controller
             ->where(function ($query) use ($search) {
                 $query->whereHas('persona', function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%")
-                    ->orWhere('apellido', 'like', "%{$search}%");
+                        ->orWhere('apellido', 'like', "%{$search}%");
                 })
-                ->orWhere('nie', 'like', "%{$search}%");
+                    ->orWhere('nie', 'like', "%{$search}%");
             })
             ->paginate(10);
 
         return response()->json($estudiantes);
     }
+
+
+    public function estudiantesByResponsable(Request $request)
+    {
+        $responsable = $request->input('responsable');
+
+        if (!$responsable) {
+            return response()->json(['error' => 'Responsable es obligatorio'], 400);
+        }
+
+        $anioActual = date('Y');
+
+        $estudiantes = Estudiante::with([
+            'responsableEstudiantes.responsable',
+            'responsableEstudiantes.estudiante',
+            'persona',
+            'historialEstudianteActual'
+        ])
+            ->where('estado', 'ACTIVO')
+            ->whereHas('responsableEstudiantes.responsable', function ($query) use ($responsable) {
+                $query->where('id_persona', $responsable);
+            })
+            ->whereHas('historialEstudianteActual')
+            ->get();
+
+        return response()->json($estudiantes);
+    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -57,9 +85,9 @@ class EstudianteController extends Controller
 
         $rules['correo'] = 'required|email|max:50';
         $rules['nie'] = 'required|string|max:10';
-        
 
-    $validated = Validator::make($request->all(), $rules)->validate();
+
+        $validated = Validator::make($request->all(), $rules)->validate();
 
         DB::beginTransaction();
 
@@ -68,8 +96,8 @@ class EstudianteController extends Controller
             $persona = Persona::create([
                 'nombre'    => $validated['nombre'],
                 'apellido'  => $validated['apellido'],
-                'direccion' => $validated['direccion'] ?? null, 
-                'telefono'  => $validated['telefono'] ?? null, 
+                'direccion' => $validated['direccion'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
                 'genero'    => $validated['genero'],
             ]);
 
@@ -81,7 +109,7 @@ class EstudianteController extends Controller
                 'estado'     => 'ACTIVO',
                 'nie'        => $validated['nie'],
             ]);
-            
+
 
             DB::commit();
 
@@ -89,7 +117,6 @@ class EstudianteController extends Controller
                 'message' => 'Estudiante creado correctamente',
                 'data' => $usuario
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -171,7 +198,6 @@ class EstudianteController extends Controller
                 'message' => 'Estudiante actualizado correctamente',
                 'data' => $estudiante
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
