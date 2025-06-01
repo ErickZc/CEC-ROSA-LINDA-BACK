@@ -7,6 +7,10 @@ use App\Models\Periodo;
 
 class PeriodoController extends Controller
 {
+    public function allPeriodos(){
+        return Periodo::all();
+    }
+
     /**
      * Display a listing of the resource.
      *

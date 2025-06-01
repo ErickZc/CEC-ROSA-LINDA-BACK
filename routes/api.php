@@ -72,6 +72,8 @@ Route::middleware('api.key')->group(function () {
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
     Route::get('/seccion/all', [SeccionController::class, 'allSecciones']);
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
+    Route::get('/notas/all', [NotaController::class, 'allNotas']);
+    Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);
 
 
     // Rutas para el login
@@ -103,4 +105,17 @@ Route::middleware('api.key')->group(function () {
     // Rutas para el chat
     Route::post('/chatbot', [ChatController::class, 'chatbot']);
     Route::get('/chatbot/temas', [ChatController::class, 'temas']);
+
+    // Rutas para la gestión de notas
+    Route::get('/notas', [PeriodoController::class, 'index']);
+    Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
+    Route::get('/materias/{id}', [MateriaController::class, 'show']);
+    Route::get('/estudiantes/{id}', [EstudianteController::class, 'show']);
+    Route::get('/estudiantes/seccion/{id}', [EstudianteController::class, 'searchSeccion']);
+    Route::get('/estudiantes/seccion/{idSeccion}/rol/{idRol}', [EstudianteController::class, 'filterDataSecciones']);
+    Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
+    Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
+    Route::get('/estudiantes/notasNew/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltradosNew']);
+    Route::put('/notas/{id}', [NotaController::class, 'update']);
+    Route::post('/notasNew', [NotaController::class, 'store']);
 });

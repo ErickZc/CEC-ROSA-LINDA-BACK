@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Estudiante;
 use App\Models\Grado;
+use App\Models\Nota;
 
 class HistorialEstudiante extends Model
 {
@@ -25,5 +26,9 @@ class HistorialEstudiante extends Model
     public function grado()
     {
         return $this->belongsTo(Grado::class, 'id_grado');
+    }
+    public function notas()
+    {
+        return $this->hasMany(Nota::class, 'id_historial_estudiante', 'id_historial_estudiante');
     }
 }

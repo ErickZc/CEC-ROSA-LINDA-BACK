@@ -59,10 +59,14 @@ class MateriaController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        //
+    public function show($id) {
+    $materia = Materia::find($id);
+        if (!$materia) {
+            return response()->json(['error' => 'No encontrado'], 404);
+        }
+        return response()->json($materia);
     }
+
 
     /**
      * Update the specified resource in storage.
