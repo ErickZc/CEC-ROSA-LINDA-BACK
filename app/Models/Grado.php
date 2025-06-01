@@ -14,7 +14,7 @@ class Grado extends Model
     use HasFactory;
     protected $table = 'Grado';
     protected $primaryKey = 'id_grado';
-    protected $fillable = ['id_grado', 'grado', 'id_seccion', 'cantidad_alumnos', 'estado'];
+    protected $fillable = ['id_grado', 'grado', 'id_seccion', 'cantidad_alumnos', 'estado', 'turno'];
 
     public $timestamps = false;
 
