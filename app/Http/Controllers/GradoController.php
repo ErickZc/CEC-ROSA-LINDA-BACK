@@ -18,6 +18,16 @@ class GradoController extends Controller
         return Seccion::where('estado', 'ACTIVO')->get();
     }
 
+    public function allGrados()
+    {
+        $grados = Grado::with('seccion')
+        ->where('estado', 'ACTIVO')
+        ->orderBy('grado', 'asc')
+        ->get();
+
+        return response()->json($grados);
+    }
+
     public function index(Request $request)
     {
         // Obtener el parámetro de búsqueda, si existe

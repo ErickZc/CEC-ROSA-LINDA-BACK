@@ -20,6 +20,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
+use App\Http\Controllers\PermisosController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,8 +37,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
-
 // Middleware con llave privada para consumo de API
 Route::middleware('api.key')->group(function () {
     
@@ -51,7 +50,8 @@ Route::middleware('api.key')->group(function () {
     Route::resource('/usuarios', UsuarioController::class)->except(['show']);
     Route::resource('/estudiantes', EstudianteController::class)->except(['show']);
     //Route::get('/estudiantes', [EstudianteController::class, 'index']);
-    Route::get('/historial', [HistorialEstudianteController::class, 'index']);
+    Route::resource('/historial', HistorialEstudianteController::class)->except(['show']);
+    //Route::get('/historial', [HistorialEstudianteController::class, 'index']);
     Route::resource('/materias', MateriaController::class)->except(['show']);
     Route::get('/periodos', [PeriodoController::class, 'index']);
     Route::get('/notas', [NotaController::class, 'index']);
@@ -71,6 +71,7 @@ Route::middleware('api.key')->group(function () {
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
     Route::get('/seccion/all', [SeccionController::class, 'allSecciones']);
+    Route::get('/grados/all', [GradoController::class, 'allGrados']);
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
     Route::get('/notas/all', [NotaController::class, 'allNotas']);
     Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);

@@ -36,14 +36,42 @@ class EstudianteController extends Controller
             ->where(function ($query) use ($search) {
                 $query->whereHas('persona', function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%")
-                    ->orWhere('apellido', 'like', "%{$search}%");
+                        ->orWhere('apellido', 'like', "%{$search}%");
                 })
-                ->orWhere('nie', 'like', "%{$search}%");
+                    ->orWhere('nie', 'like', "%{$search}%");
             })
             ->paginate(10);
 
         return response()->json($estudiantes);
     }
+
+
+    public function estudiantesByResponsable(Request $request)
+    {
+        $responsable = $request->input('responsable');
+
+        if (!$responsable) {
+            return response()->json(['error' => 'Responsable es obligatorio'], 400);
+        }
+
+        $anioActual = date('Y');
+
+        $estudiantes = Estudiante::with([
+            'responsableEstudiantes.responsable',
+            'responsableEstudiantes.estudiante',
+            'persona',
+            'historialEstudianteActual'
+        ])
+            ->where('estado', 'ACTIVO')
+            ->whereHas('responsableEstudiantes.responsable', function ($query) use ($responsable) {
+                $query->where('id_persona', $responsable);
+            })
+            ->whereHas('historialEstudianteActual')
+            ->get();
+
+        return response()->json($estudiantes);
+    }
+
 
     public function searchSeccion($idSeccion)
     {
@@ -305,9 +333,9 @@ public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_secc
 
         $rules['correo'] = 'required|email|max:50';
         $rules['nie'] = 'required|string|max:10';
-        
 
-    $validated = Validator::make($request->all(), $rules)->validate();
+
+        $validated = Validator::make($request->all(), $rules)->validate();
 
         DB::beginTransaction();
 
@@ -316,8 +344,8 @@ public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_secc
             $persona = Persona::create([
                 'nombre'    => $validated['nombre'],
                 'apellido'  => $validated['apellido'],
-                'direccion' => $validated['direccion'] ?? null, 
-                'telefono'  => $validated['telefono'] ?? null, 
+                'direccion' => $validated['direccion'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
                 'genero'    => $validated['genero'],
             ]);
 
@@ -329,7 +357,7 @@ public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_secc
                 'estado'     => 'ACTIVO',
                 'nie'        => $validated['nie'],
             ]);
-            
+
 
             DB::commit();
 
@@ -337,7 +365,6 @@ public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_secc
                 'message' => 'Estudiante creado correctamente',
                 'data' => $usuario
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -433,7 +460,6 @@ public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_secc
                 'message' => 'Estudiante actualizado correctamente',
                 'data' => $estudiante
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
