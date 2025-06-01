@@ -97,11 +97,6 @@ class NotaController extends Controller
     //     return response()->json(['message' => 'Nota creada con éxito', 'nota' => $nota], 201);
     // }
 
-
-    
-
-
-
 public function store(Request $request)
 {
     // Validación básica
