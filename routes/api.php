@@ -107,6 +107,13 @@ Route::middleware('api.key')->group(function () {
     Route::post('/chatbot', [ChatController::class, 'chatbot']);
     Route::get('/chatbot/temas', [ChatController::class, 'temas']);
 
+    // Rutas para permisos
+    Route::resource('/permisos', PermisosController::class)->except(['show']);
+    Route::post('/permisos/permisosPorResponsable', [PermisosController::class, 'getPermisosByResponsable']);
+    Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
+    Route::post('/estudiantes/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesByResponsable']);
+
+    
     // Rutas para la gestión de notas
     Route::get('/notas', [PeriodoController::class, 'index']);
     Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
