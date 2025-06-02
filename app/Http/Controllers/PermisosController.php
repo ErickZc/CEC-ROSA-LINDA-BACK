@@ -41,8 +41,7 @@ class PermisosController extends Controller
 
     public function getPermisosByDocente(Request $request)
     {
-        $nombre = $request->input('nombre', '');
-        $responsable = $request->input('responsable', '');
+        $search = $request->input('search', '');
         $docente = $request->input('docente');
 
         $grados = DocenteMateriaGrado::with([
@@ -54,8 +53,8 @@ class PermisosController extends Controller
                     $q->where('id_persona', "$docente");
                 });
             })
-            ->pluck('id_grado') 
-            ->unique()          
+            ->pluck('id_grado')
+            ->unique()
             ->values();
 
 
@@ -64,14 +63,14 @@ class PermisosController extends Controller
             'historialestudiante.estudiante.responsableEstudiantes.responsable.persona',
             'historialestudiante.grado',
         ])
-            ->when($nombre, function ($query) use ($nombre) {
-                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
-                    $q->where('nombre', 'like', "%{$nombre}%");
-                });
-            })
-            ->when($responsable, function ($query) use ($responsable) {
-                $query->whereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q) use ($responsable) {
-                    $q->where('nombre', 'like', "%{$responsable}%");
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('historialestudiante.estudiante.persona', function ($q2) use ($search) {
+                        $q2->where('nombre', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q3) use ($search) {
+                            $q3->where('nombre', 'like', "%{$search}%");
+                        });
                 });
             })
             ->when(!empty($grados), function ($query) use ($grados) {
