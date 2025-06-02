@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Grado;
 use App\Models\Materia;
+use App\Models\Docente;
+
 
 class DocenteMateriaGrado extends Model
 {
@@ -21,5 +23,10 @@ class DocenteMateriaGrado extends Model
     public function materia()
     {
         return $this->belongsTo(Materia::class, 'id_materia');
+    }
+
+    public function docente()
+    {
+        return $this->belongsTo(Docente::class, 'id_docente');
     }
 }

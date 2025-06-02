@@ -28,13 +28,11 @@ class Grado extends Model
         return $this->hasMany(HistorialEstudiante::class, 'id_grado');
     }
 
-    // En HistorialEstudiante.php
     public function estudiante()
     {
         return $this->belongsTo(Estudiante::class, 'id_estudiante');
     }
 
-    // En Estudiante.php
     public function persona()
     {
         return $this->belongsTo(Persona::class, 'id_persona');
