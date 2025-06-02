@@ -87,6 +87,18 @@ class PermisosController extends Controller
      */
     public function store(Request $request)
     {
+        $permisoExistente = Permisos::where('id_historial', $request->input('id_historial'))
+            ->whereDate('fecha_inicio', $request->input('fecha_inicio'))
+            ->first();
+
+        if ($permisoExistente) {
+            return response()->json([
+                'message' => 'Ya existe un permiso para esta fecha de inicio.',
+                'conflict' => true,
+                'permiso_existente' => $permisoExistente
+            ], 409); // 409 Conflict
+        }
+
         DB::beginTransaction();
 
         try {
