@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Permisos;
+use App\Models\DocenteMateriaGrado;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,24 +41,28 @@ class PermisosController extends Controller
 
     public function getPermisosByDocente(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'grados' => 'required|array|min:1',
-            'grados.*' => 'integer|exists:Grado,id_grado',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Se debe especificar un grado válido',
-            ], 400);
-        }
         $nombre = $request->input('nombre', '');
         $responsable = $request->input('responsable', '');
-        $grados = $request->input('grados');
+        $docente = $request->input('docente');
+
+        $grados = DocenteMateriaGrado::with([
+            'docente.persona',
+            'grado'
+        ])
+            ->when($docente, function ($query) use ($docente) {
+                $query->whereHas('docente.persona', function ($q) use ($docente) {
+                    $q->where('id_persona', "$docente");
+                });
+            })
+            ->pluck('id_grado') 
+            ->unique()          
+            ->values();
+
 
         $permisos = Permisos::with([
             'historialestudiante.estudiante.persona',
             'historialestudiante.estudiante.responsableEstudiantes.responsable.persona',
-            'historialestudiante.grado'
+            'historialestudiante.grado',
         ])
             ->when($nombre, function ($query) use ($nombre) {
                 $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {

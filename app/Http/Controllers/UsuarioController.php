@@ -98,78 +98,7 @@ class UsuarioController extends Controller
         }
     }
   
-    public function login(Request $request)
-    {
-        $correo = $request->input('correo');
-        $password = $request->input('password');
     
-        $usuario = Usuario::with(['persona', 'rol'])->where('correo', $correo)->first();
-    
-        if (!$usuario) {
-            return response()->json([
-                'message' => 'El usuario no existe'
-            ], 404);
-        }
-    
-        if ($usuario->estado !== 'ACTIVO') {
-            return response()->json([
-                'message' => 'El usuario no está activo'
-            ], 403); // 403 Forbidden
-        }
-    
-        if (!Hash::check($password, $usuario->password)) {
-            return response()->json([
-                'message' => 'Contraseña incorrecta'
-            ], 401);
-        }
-    
-        return response()->json([
-            'message' => 'Inicio de sesión exitoso',
-            'usuario' => $usuario
-        ], 200);
-    }
-
-    public function validarCorreo(Request $request)
-    {
-        $correo = $request->input('correo');
-        $usuario = Usuario::where('correo', $correo)->select('id_usuario', 'estado')->first();
-    
-        if (!$usuario) {
-            return response()->json([
-                'message' => 'El correo no ha sido encontrado'
-            ], 404);
-        }
-    
-        if ($usuario->estado !== 'ACTIVO') {
-            return response()->json([
-                'message' => 'El correo no está activo'
-            ], 403); // 403 Forbidden
-        }
-       
-        return response()->json([
-            'message' => 'El usuario a sido encontrado',
-            'usuario' => $usuario
-        ], 200);
-    }
-
-    public function actualizarCredenciales(Request $request)
-    {
-        $request->validate([
-            'correo' => 'required|email',
-            'nueva_contrasena' => 'required|string|min:6'
-        ]);
-
-        $usuario = Usuario::where('correo', $request->correo)->first();
-
-        if (!$usuario) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
-        }
-
-        $usuario->password = Hash::make($request->nueva_contrasena);
-        $usuario->save();
-
-        return response()->json(['message' => 'Contraseña actualizada con éxito']);
-    }
 
      public function update(Request $request, $id)
      {

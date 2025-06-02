@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Persona;
 use App\Models\RolUsuario;
 
-class Usuario extends Model
+class Usuario extends Authenticatable implements JWTSubject
 {
     use HasFactory;
     protected $table = 'Usuario';
@@ -25,6 +27,17 @@ class Usuario extends Model
     public function rol()
     {
         return $this->belongsTo(RolUsuario::class, 'id_rol');
+    }
+
+     // Métodos requeridos por JWTSubject
+    public function getJWTIdentifier()
+    {
+        return $this->getKey(); // retorna id_usuario
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 
 
