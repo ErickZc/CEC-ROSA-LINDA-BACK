@@ -103,216 +103,247 @@ class EstudianteController extends Controller
         ]);
     }
 
+    public function seccionesPorUsuario($idRol, $idPersona)
+    {
+        if (!in_array($idRol, [1, 2])) {
+            return response()->json(['error' => 'No autorizado. Rol no permitido.'], 403);
+        }
 
+        // =================== ADMINISTRADOR ===================
+        if ($idRol == 1) {
+            $secciones = Seccion::all();
+            return response()->json([
+                'rol' => 'ADMINISTRADOR',
+                'total_secciones' => $secciones->count(),
+                'secciones' => $secciones
+            ]);
+        }
 
+        // =================== DOCENTE ===================
+        $docente = Docente::where('id_persona', $idPersona)->first();
+        if (!$docente) {
+            return response()->json(['error' => 'El usuario no está registrado como docente.'], 404);
+        }
 
-
-
-
-
-
-public function seccionesPorUsuario($idRol, $idPersona)
-{
-    if (!in_array($idRol, [1, 2])) {
-        return response()->json(['error' => 'No autorizado. Rol no permitido.'], 403);
-    }
-
-    // =================== ADMINISTRADOR ===================
-    if ($idRol == 1) {
-        $secciones = Seccion::all();
-        return response()->json([
-            'rol' => 'ADMINISTRADOR',
-            'total_secciones' => $secciones->count(),
-            'secciones' => $secciones
-        ]);
-    }
-
-    // =================== DOCENTE ===================
-    $docente = Docente::where('id_persona', $idPersona)->first();
-    if (!$docente) {
-        return response()->json(['error' => 'El usuario no está registrado como docente.'], 404);
-    }
-
-    // Obtener asignaciones del docente
-    $asignaciones = DocenteMateriaGrado::where('id_docente', $docente->id_docente)
-        ->with(['materia', 'grado.seccion'])
-        ->get();
-
-    if ($asignaciones->isEmpty()) {
-        return response()->json(['message' => 'El docente no tiene asignaciones registradas.'], 404);
-    }
-
-    $secciones = collect();
-    $grados = collect();
-    $materias = collect();
-    // $estudiantesConNotas = collect();
-
-    foreach ($asignaciones as $asignacion) {
-        $grado = $asignacion->grado;
-        $seccion = $grado->seccion;
-        $materia = $asignacion->materia;
-
-        // Acumular secciones, grados y materias únicas
-        $secciones->push($seccion);
-        $grados->push([
-            'id_grado' => $grado->id_grado,
-            'grado' => $grado->grado,
-            'id_seccion' => $grado->id_seccion,
-            'seccion' => $seccion->seccion,
-        ]);
-        $materias->push([
-            'id_materia' => $materia->id_materia,
-            'nombre_materia' => $materia->nombre_materia
-        ]);
-
-        // // Obtener estudiantes del grado
-        // $historiales = HistorialEstudiante::where('id_grado', $grado->id_grado)
-        //     ->with(['estudiante.persona'])
-        //     ->get();
-
-        // foreach ($historiales as $historial) {
-        //     $notas = Nota::where('id_historial', $historial->id_historial)
-        //         ->where('id_materia', $materia->id_materia)
-        //         // ->with(['periodo'])
-        //         ->get();
-
-        //     $estudiantesConNotas->push([
-        //         'estudiante' => [
-        //             'id_estudiante' => $historial->estudiante->id_estudiante,
-        //             'nombre' => $historial->estudiante->persona->nombre,
-        //             'apellido' => $historial->estudiante->persona->apellido,
-        //             'genero' => $historial->estudiante->persona->genero,
-        //             'telefono' => $historial->estudiante->persona->telefono,
-        //             'direccion' => $historial->estudiante->persona->direccion,
-        //         ],
-        //         'grado' => $grado->grado,
-        //         'seccion' => $seccion->seccion,
-        //         'materia' => $materia->nombre_materia,
-        //         'notas' => $notas->map(function ($nota) {                    
-        //             $periodo = Periodo::where('id_periodo', $nota->id_periodo)->get();
-        //             return [
-        //                 'id_nota' => $nota->id_nota,
-        //                 'actividad1' => $nota->actividad1,
-        //                 'actividad2' => $nota->actividad2,
-        //                 'actividad3' => $nota->actividad3,
-        //                 'actividadInt' => $nota->actividadInt,
-        //                 'examen' => $nota->examen,
-        //                 'promedio' => $nota->promedio,
-        //                 'periodos' => $nota->periodo ? [
-        //                     'id_periodo' => $nota->periodo->id_periodo,
-        //                     'periodo' => $nota->periodo->periodo,
-        //                     'estado' => $nota->periodo->estado,
-        //                 ] : null
-        //             ];
-        //         })
-        //     ]);
-        // }
-    }
-
-    return response()->json([
-        'rol' => 'DOCENTE',
-        'total_secciones' => $secciones->unique('id_seccion')->count(),
-        'secciones' => $secciones->unique('id_seccion')->values(),
-        'grados' => $grados->unique('id_grado')->values(),
-        'materias' => $materias->unique('id_materia')->values()//,
-        // 'estudiantes' => $estudiantesConNotas
-        //     ->unique(fn($e) => $e['estudiante']['id_estudiante'] . '-' . $e['materia'])
-        //     ->values()
-    ]);
-}
-
-public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion)
-{
-    // Obtener los historiales de estudiantes filtrados por grado y sección
-    $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-        ->whereHas('grado.seccion', function($query) use ($id_seccion) {
-            $query->where('id_seccion', $id_seccion);
-        })
-        ->with(['estudiante.persona'])
-        ->get();
-
-    $estudiantes = $historiales->map(function($historial) use ($id_materia) {
-        // Obtener notas del historial y materia especificados
-        $notas = Nota::where('id_historial', $historial->id_historial)
-            ->where('id_materia', $id_materia)
-            ->with('periodo') // relación periodo en modelo Nota
+        // Obtener asignaciones del docente
+        $asignaciones = DocenteMateriaGrado::where('id_docente', $docente->id_docente)
+            ->with(['materia', 'grado.seccion'])
             ->get();
 
-        return [
-            'estudiante' => [
-                'id_estudiante' => $historial->estudiante->id_estudiante,
-                'nombre' => $historial->estudiante->persona->nombre,
-                'apellido' => $historial->estudiante->persona->apellido,
-                // Agrega otros datos si quieres
-            ],
-            'notas' => $notas->map(function($nota) {
-                return [
-                    'id_nota' => $nota->id_nota,
-                    'actividad1' => $nota->actividad1,
-                    'actividad2' => $nota->actividad2,
-                    'actividad3' => $nota->actividad3,
-                    'actividadInt' => $nota->actividadInt,
-                    'examen' => $nota->examen,
-                    'promedio' => $nota->promedio,
-                    'periodo' => $nota->periodo ? [
-                        'id_periodo' => $nota->periodo->id_periodo,
-                        'periodo' => $nota->periodo->periodo,
-                        'estado' => $nota->periodo->estado,
-                    ] : null,
-                ];
-            }),
-        ];
-    })->values();
+        if ($asignaciones->isEmpty()) {
+            return response()->json(['message' => 'El docente no tiene asignaciones registradas.'], 404);
+        }
 
-    return response()->json([
-        'id_grado' => $id_grado,
-        'id_materia' => $id_materia,
-        'id_seccion' => $id_seccion,
-        'total_estudiantes' => $estudiantes->count(),
-        'estudiantes' => $estudiantes,
-    ]);
-}
+        $secciones = collect();
+        $grados = collect();
+        $materias = collect();
+        // $estudiantesConNotas = collect();
 
+        foreach ($asignaciones as $asignacion) {
+            $grado = $asignacion->grado;
+            $seccion = $grado->seccion;
+            $materia = $asignacion->materia;
 
-public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_seccion)
-{
-    // Obtener historiales filtrados por grado y sección
-    $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+            // Acumular secciones, grados y materias únicas
+            $secciones->push($seccion);
+            $grados->push([
+                'id_grado' => $grado->id_grado,
+                'grado' => $grado->grado,
+                'id_seccion' => $grado->id_seccion,
+                'seccion' => $seccion->seccion,
+            ]);
+            $materias->push([
+                'id_materia' => $materia->id_materia,
+                'nombre_materia' => $materia->nombre_materia
+            ]);
+        }
+
+        return response()->json([
+            'rol' => 'DOCENTE',
+            'total_secciones' => $secciones->unique('id_seccion')->count(),
+            'secciones' => $secciones->unique('id_seccion')->values(),
+            'grados' => $grados->unique('id_grado')->values(),
+            'materias' => $materias->unique('id_materia')->values()
+        ]);
+    }
+
+    public function contarEstudiantesPorSeccion($id_grado)
+    {
+        $grado = Grado::with('seccion')->where('id_grado', $id_grado)->first();
+
+        if (!$grado) {
+            return response()->json([
+                'message' => 'Grado no encontrado'
+            ], 404);
+        }
+
+        // Contar estudiantes de ese grado
+        $cantidad_estudiantes = HistorialEstudiante::where('id_grado', $id_grado)->count();
+
+        return response()->json([
+            'id_grado' => $grado->id_grado,
+            'nombre_grado' => $grado->grado,
+            'seccion' => [
+                'id_seccion' => $grado->seccion->id_seccion ?? null,
+                'nombre_seccion' => $grado->seccion->seccion ?? null,
+                'cantidad_estudiantes' => $cantidad_estudiantes
+            ]
+        ], 200);
+    }
+
+    public function reporteEstudiantes($id_grado, $id_materia, $id_seccion)
+    {
+        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
         ->whereHas('grado.seccion', function($query) use ($id_seccion) {
             $query->where('id_seccion', $id_seccion);
         })
         ->with(['estudiante.persona'])
         ->get();
+        
+        $estudiantes = $historiales->map(function($historial) use ($id_materia) {
+            $notas = Nota::where('id_historial', $historial->id_historial)
+                ->where('id_materia', $id_materia)
+                ->with('periodo')
+                ->get();
 
-    // Filtrar solo estudiantes que NO tienen notas registradas para esa materia
-    $estudiantes = $historiales->filter(function ($historial) use ($id_materia) {
-        return Nota::where('id_historial', $historial->id_historial)
-            ->where('id_materia', $id_materia)
-            ->doesntExist();
-    })->map(function ($historial) {
-        return [
-            'estudiante' => [
-                'id_estudiante' => $historial->estudiante->id_estudiante,
-                'nombre' => $historial->estudiante->persona->nombre,
-                'apellido' => $historial->estudiante->persona->apellido,
-            ],
+            $estudiante = $historial->estudiante;
+            $persona = $estudiante->persona;
+
+            return [
+                'id_estudiante' => $estudiante->id_estudiante ?? null,
+                'nombre' => $persona->nombre ?? 'Sin nombre',
+                'apellido' => $persona->apellido ?? 'Sin apellido',
+                'notas' => $notas->map(function($nota) {
+                    return [
+                        'id_nota' => $nota->id_nota,
+                        'actividad1' => $nota->actividad1,
+                        'actividad2' => $nota->actividad2,
+                        'actividad3' => $nota->actividad3,
+                        'actividadInt' => $nota->actividadInt,
+                        'examen' => $nota->examen,
+                        'promedio' => $nota->promedio,
+                        'periodo' => $nota->periodo ? [
+                            'id_periodo' => $nota->periodo->id_periodo,
+                            'periodo' => $nota->periodo->periodo,
+                            'estado' => $nota->periodo->estado,
+                        ] : null,
+                    ];
+                })
+            ];
+        });
+
+        $grafico = [
+            'labels' => $estudiantes->map(function ($e) {
+                $nombre = $e['nombre'] ?? 'Sin nombre';
+                $apellido = $e['apellido'] ?? 'Sin apellido';
+                return trim($nombre . ' ' . $apellido);
+            })->toArray(),
+
+
+            'datos' => $estudiantes->map(function($e) {
+                // Asegura que 'notas' exista y sea una colección válida
+                $promedios = collect($e['notas'] ?? [])
+                    ->pluck('promedio')
+                    ->filter(function ($value) {
+                        return is_numeric($value); // solo valores válidos
+                    });
+
+                return $promedios->count() > 0 ? round($promedios->avg(), 2) : 0;
+            })->toArray()
         ];
-    })->values();
 
     return response()->json([
-        'estudiantes' => $estudiantes,
-    ]);
-}
+            'id_grado' => $id_grado,
+            'id_materia' => $id_materia,
+            'id_seccion' => $id_seccion,
+            'total_estudiantes' => $estudiantes->count(),
+            'estudiantes' => $estudiantes,
+            'grafico' => $grafico
+        ]);
+    }
+
+    public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion)
+    {
+        // Obtener los historiales de estudiantes filtrados por grado y sección
+        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+            ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+                $query->where('id_seccion', $id_seccion);
+            })
+            ->with(['estudiante.persona'])
+            ->get();
+
+        $estudiantes = $historiales->map(function($historial) use ($id_materia) {
+            // Obtener notas del historial y materia especificados
+            $notas = Nota::where('id_historial', $historial->id_historial)
+                ->where('id_materia', $id_materia)
+                ->with('periodo') // relación periodo en modelo Nota
+                ->get();
+
+            return [
+                'estudiante' => [
+                    'id_estudiante' => $historial->estudiante->id_estudiante,
+                    'nombre' => $historial->estudiante->persona->nombre,
+                    'apellido' => $historial->estudiante->persona->apellido,
+                    // Agrega otros datos si quieres
+                ],
+                'notas' => $notas->map(function($nota) {
+                    return [
+                        'id_nota' => $nota->id_nota,
+                        'actividad1' => $nota->actividad1,
+                        'actividad2' => $nota->actividad2,
+                        'actividad3' => $nota->actividad3,
+                        'actividadInt' => $nota->actividadInt,
+                        'examen' => $nota->examen,
+                        'promedio' => $nota->promedio,
+                        'periodo' => $nota->periodo ? [
+                            'id_periodo' => $nota->periodo->id_periodo,
+                            'periodo' => $nota->periodo->periodo,
+                            'estado' => $nota->periodo->estado,
+                        ] : null,
+                    ];
+                }),
+            ];
+        })->values();
+
+        return response()->json([
+            'id_grado' => $id_grado,
+            'id_materia' => $id_materia,
+            'id_seccion' => $id_seccion,
+            'total_estudiantes' => $estudiantes->count(),
+            'estudiantes' => $estudiantes,
+        ]);
+    }
 
 
+    public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_seccion)
+    {
+        // Obtener historiales filtrados por grado y sección
+        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+            ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+                $query->where('id_seccion', $id_seccion);
+            })
+            ->with(['estudiante.persona'])
+            ->get();
 
+        // Filtrar solo estudiantes que NO tienen notas registradas para esa materia
+        $estudiantes = $historiales->filter(function ($historial) use ($id_materia) {
+            return Nota::where('id_historial', $historial->id_historial)
+                ->where('id_materia', $id_materia)
+                ->doesntExist();
+        })->map(function ($historial) {
+            return [
+                'estudiante' => [
+                    'id_estudiante' => $historial->estudiante->id_estudiante,
+                    'nombre' => $historial->estudiante->persona->nombre,
+                    'apellido' => $historial->estudiante->persona->apellido,
+                ],
+            ];
+        })->values();
 
-
-
-
-
-
-
+        return response()->json([
+            'estudiantes' => $estudiantes,
+        ]);
+    }
 
     /**
      * Store a newly created resource in storage.

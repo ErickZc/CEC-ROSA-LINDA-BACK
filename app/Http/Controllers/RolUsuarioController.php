@@ -7,6 +7,13 @@ use App\Models\RolUsuario;
 
 class RolUsuarioController extends Controller
 {
+
+    public function allRoles()
+    {
+        return RolUsuario::select('rol')->get();
+    }
+
+
     /**
      * Display a listing of the resource.
      *
