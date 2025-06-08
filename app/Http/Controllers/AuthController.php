@@ -77,6 +77,9 @@ class AuthController extends Controller
             'rol' => $usuario->rol->rol ?? 'INVITADO',
             'nombre' => $usuario->persona->nombre ?? 'SinNombre',
             'apellido' => $usuario->persona->apellido ?? 'SinApellido',
+            'usuario' => $usuario->usuario,
+            'id_persona' => $usuario->id_persona,
+            'id_rol' => $usuario->rol->id_rol,
         ];
 
         $token = JWTAuth::claims($customClaims)->fromUser($usuario);
