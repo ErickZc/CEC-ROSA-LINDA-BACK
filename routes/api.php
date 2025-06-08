@@ -20,6 +20,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
+use App\Models\DocenteMateriaGrado;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,4 +104,18 @@ Route::middleware('api.key')->group(function () {
     // Rutas para el chat
     Route::post('/chatbot', [ChatController::class, 'chatbot']);
     Route::get('/chatbot/temas', [ChatController::class, 'temas']);
+
+    //rutas para el asignar materias al docente
+    Route::get('/admin/showGradosTurnoCiclo1', [GradoController::class, 'showGradoXturnoCiclo1']);
+    Route::get('/admin/showGradosTurnoCiclo2', [GradoController::class, 'showGradoXturnoCiclo2']);
+    Route::get('/admin/showGradosTurnoCiclo3', [GradoController::class, 'showGradoXturnoCiclo3']);
+    Route::get('/admin/showGradosTurnoCiclo4', [GradoController::class, 'showGradoXturnoCiclo4']);
+    Route::get('/admin/busquedaDocente', [DocenteMateriaGradoController::class, 'busquedaDocente']);
+    Route::get('/admin/mostrarMateriaxCiclo', [MateriaController::class, 'mostrarMateriaXCiclo']);
+    Route::get('/admin/obtenerMateriasConDocentesPorGrado', [DocenteMateriaGradoController::class, 'obtenerMateriasConDocentesPorGrado']);
+    Route::post('/admin/desvincularDocenteMateriaGrado', [DocenteMateriaGradoController::class, 'desvincularDocenteMateriaGrado']);
+    Route::post('/admin/AsignarMateriaDocenteCiclo1', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo1']);
+    Route::post('/admin/AsignarMateriaDocenteCiclo2', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo2']);
+    Route::post('/admin/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
+    Route::post('/admin/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
 });

@@ -53,24 +53,17 @@ class MateriaController extends Controller
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
+    public function mostrarMateriaXCiclo(Request $request)
     {
-        //
+        $materias = Materia::where('id_ciclo', $request->id_ciclo)
+        //    ->where('nombre_materia', 'not like', 'Educacion%')
+        //    ->where('nombre_materia', 'not like', 'Desarrollo Corporal%')
+            ->get();
+
+        return response()->json($materias);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    
     public function update(Request $request, $id)
     {
         // Buscar la materia
