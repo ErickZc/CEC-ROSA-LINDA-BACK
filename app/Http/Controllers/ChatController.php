@@ -74,7 +74,7 @@ class ChatController extends Controller
             return response()->json(['reply' => $reply]);
         } catch (\Exception $e) {
             Log::error('Error al contactar con Gemini API', ['error' => $e->getMessage()]);
-            return response()->json(['reply' => $e.getMessage()]);
+            return response()->json(['reply' => $e->getMessage()]);
         }
     }
 

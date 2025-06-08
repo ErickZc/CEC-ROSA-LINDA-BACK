@@ -23,7 +23,7 @@ class MateriaController extends Controller
 
         // Filtrar los usuarios según el parámetro de búsqueda
         $materias = Materia::where('nombre_materia', 'like', "%{$search}%")
-                            ->paginate(5);
+                            ->paginate(10);
 
         // Devolver los usuarios paginados
         return response()->json($materias);
@@ -39,12 +39,14 @@ class MateriaController extends Controller
     {
         $validated = $request->validate([
             'nombre_materia' => 'required|string|max:50|unique:Materia,nombre_materia',
-            'estado' => 'nullable|in:ACTIVO,INACTIVO'
+            'estado' => 'nullable|in:ACTIVO,INACTIVO',
+            'id_ciclo' => 'required|exists:Ciclo,id_ciclo',
         ]);
 
         $materia = Materia::create([
             'nombre_materia' => $validated['nombre_materia'],
-            'estado' => $validated['estado'] ?? 'ACTIVO'
+            'estado' => $validated['estado'] ?? 'ACTIVO',
+            'id_ciclo' => $validated['id_ciclo']
         ]);
 
         return response()->json([
@@ -64,6 +66,28 @@ class MateriaController extends Controller
     }
 
     
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id) {
+    $materia = Materia::find($id);
+        if (!$materia) {
+            return response()->json(['error' => 'No encontrado'], 404);
+        }
+        return response()->json($materia);
+    }
+
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request, $id)
     {
         // Buscar la materia
@@ -75,12 +99,14 @@ class MateriaController extends Controller
         // Validar datos
         $validated = $request->validate([
             'nombre_materia' => 'required|string|max:50',
-            'estado' => 'required|in:ACTIVO,INACTIVO'
+            'estado' => 'required|in:ACTIVO,INACTIVO',
+            'id_ciclo' => 'required|exists:Ciclo,id_ciclo',
         ]);
 
         // Asignar valores
         $materia->nombre_materia = $validated['nombre_materia'];
         $materia->estado = $validated['estado'];
+        $materia->id_ciclo = $validated['id_ciclo'];
 
         // Guardar cambios
         $materia->save();

@@ -18,6 +18,16 @@ class GradoController extends Controller
         return Seccion::where('estado', 'ACTIVO')->get();
     }
 
+    public function allGrados()
+    {
+        $grados = Grado::with('seccion')
+        ->where('estado', 'ACTIVO')
+        ->orderBy('grado', 'asc')
+        ->get();
+
+        return response()->json($grados);
+    }
+
     public function index(Request $request)
     {
         // Obtener el parámetro de búsqueda, si existe
@@ -124,6 +134,7 @@ class GradoController extends Controller
             'id_seccion' => 'required|exists:Seccion,id_seccion',
             'cantidad_alumnos' => 'nullable|integer|min:0',
             'estado' => 'nullable|in:ACTIVO,INACTIVO',
+            'turno' => 'required|in:MAÑANA,TARDE',
         ]);
 
         $grado = Grado::create([
@@ -131,6 +142,7 @@ class GradoController extends Controller
             'id_seccion' => $validated['id_seccion'],
             'cantidad_alumnos' => $validated['cantidad_alumnos'] ?? 0,
             'estado' => $validated['estado'] ?? 'ACTIVO',
+            'turno' => $validated['turno'],
         ]);
 
         return response()->json([
@@ -170,6 +182,7 @@ class GradoController extends Controller
             'id_seccion' => 'required|exists:Seccion,id_seccion',
             'cantidad_alumnos' => 'nullable|integer|min:0',
             'estado' => 'required|in:ACTIVO,INACTIVO',
+            'turno' => 'required|in:MAÑANA,TARDE'
         ]);
 
         $grado->update($validated);
