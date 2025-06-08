@@ -22,6 +22,7 @@ use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
 use App\Http\Controllers\PermisosController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CicloController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,12 +58,13 @@ Route::post('/enviar-otp', [RecoveryController::class, 'sendOTP']);
 // Nueva ruta para refrescar el token
 Route::post('/refresh', [AuthController::class, 'refresh']);
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
+
+/*Route::middleware('auth:api')->get('/user', function (Request $request) {
     $user = auth()->user();
     // o también
     // $user = JWTAuth::parseToken()->authenticate();
     return response()->json($user);
-});
+});*/
 
 // Middleware con llave privada para consumo de API
 Route::middleware(['auth:api', 'api.key'])->group(function () {
@@ -102,6 +104,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
     Route::get('/notas/all', [NotaController::class, 'allNotas']);
     Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);
+    Route::get('/ciclos/all', [CicloController::class, 'allCiclos']);
 
     //Reportes
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
@@ -129,4 +132,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/estudiantes/notasNew/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltradosNew']);
     Route::put('/notas/{id}', [NotaController::class, 'update']);
     Route::post('/notasNew', [NotaController::class, 'store']);
+
+    Route::get('/me', [AuthController::class, 'me']);
+    //inhabilitar token al cerrar sesion
+    Route::post('/logout', [AuthController::class, 'logout']);
 });

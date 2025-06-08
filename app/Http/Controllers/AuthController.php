@@ -28,7 +28,18 @@ class AuthController extends Controller
 
     public function me()
     {
-        return response()->json(Auth::user());
+        $usuario = \App\Models\Usuario::with('rol')->find(auth()->id());
+
+        return response()->json([
+            'id_usuario' => $usuario->id_usuario,
+            'usuario' => $usuario->usuario,
+            'id_persona' => $usuario->id_persona,
+            'rol' => $usuario->rol->rol ?? null,
+        ]);
+        /*return response()->json([
+        'message' => 'funciona correctamente',
+        'user' => auth()->user()
+    ]);*/
     }
 
     public function logout()
@@ -62,7 +73,13 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = JWTAuth::fromUser($usuario);
+        $customClaims = [
+            'rol' => $usuario->rol->rol ?? 'INVITADO',
+            'nombre' => $usuario->persona->nombre ?? 'SinNombre',
+            'apellido' => $usuario->persona->apellido ?? 'SinApellido',
+        ];
+
+        $token = JWTAuth::claims($customClaims)->fromUser($usuario);
 
          return response()->json([
             'message' => 'Inicio de sesión exitoso',
@@ -71,11 +88,6 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
         ]);
-    
-        /*return response()->json([
-            'message' => 'Inicio de sesión exitoso',
-            'usuario' => $usuario
-        ], 200);*/
     }
 
     public function validarCorreo(Request $request)
