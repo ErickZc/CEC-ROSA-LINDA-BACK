@@ -109,6 +109,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/totalUsuarios', [UsuarioController::class, 'totalUsuarios']);
     Route::get('/estudiantes/reporte/{idGrado}', [EstudianteController::class, 'contarEstudiantesPorSeccion']);
     Route::get('/estudiantes/reporteEstudiantes/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'reporteEstudiantes']);
+    Route::get('/estudiantes/reporteRepetidores', [EstudianteController::class, 'estudiantesRepetidores']);
 
     // Rutas para el chat
     Route::post('/chatbot', [ChatController::class, 'chatbot']);

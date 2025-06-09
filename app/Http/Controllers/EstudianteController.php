@@ -345,6 +345,141 @@ class EstudianteController extends Controller
         ]);
     }
 
+
+    public function estudiantesRepetidores()
+{
+    // 1. Obtener los historiales de estudiantes que repiten grado (tienen estado REPROBADO y CURSANDO)
+    $repetidores = HistorialEstudiante::whereIn('estado', ['REPROBADO', 'CURSANDO'])
+        // ->select('id_estudiante', 'id_grado')
+        // ->groupBy('id_estudiante', 'id_grado')
+        // ->havingRaw('COUNT(DISTINCT estado) = 2')
+        ->get();
+
+    // 2. Traer los historiales completos de esos estudiantes y grados, con estudiante, persona y notas filtradas
+    // $historiales = HistorialEstudiante::with(['estudiante.persona', 'notas.periodo'])
+    //     ->whereIn(function($query) use ($repetidores) {
+    //         $query->selectRaw("CONCAT(id_estudiante,'-',id_grado)")
+    //             ->from('Historial_Estudiante')
+    //             ->whereIn('id_estudiante', $repetidores->pluck('id_estudiante'))
+    //             ->whereIn('id_grado', $repetidores->pluck('id_grado'));
+    //     }, $repetidores->map(fn($r) => $r->id_estudiante . '-' . $r->id_grado)->toArray())
+    //     ->get();
+
+    // 3. Agrupar por estudiante y grado
+    // $agrupados = $historiales->groupBy(function($h) {
+    //     return $h->id_estudiante . '-' . $h->id_grado;
+    // });
+
+    // 4. Mapear para devolver estructura con notas reprobadas (<7)
+    // $estudiantes = $agrupados->map(function($grupo) {
+    //     $historial = $grupo->first();
+    //     $estudiante = $historial->estudiante;
+    //     $persona = $estudiante->persona;
+
+    //     $notasReprobadas = $grupo->flatMap(function($h) {
+    //         return $h->notas->filter(fn($n) => $n->promedio < 7);
+    //     });
+
+    //     return [
+    //         'id_estudiante' => $estudiante->id_estudiante,
+    //         'nombre' => $persona->nombre,
+    //         'apellido' => $persona->apellido,
+    //         'notas' => $notasReprobadas->map(function($nota) {
+    //             return [
+    //                 'id_nota' => $nota->id_nota,
+    //                 'actividad1' => $nota->actividad1,
+    //                 'actividad2' => $nota->actividad2,
+    //                 'actividad3' => $nota->actividad3,
+    //                 'actividadInt' => $nota->actividadInt,
+    //                 'examen' => $nota->examen,
+    //                 'promedio' => $nota->promedio,
+    //                 'periodo' => $nota->periodo ? [
+    //                     'id_periodo' => $nota->periodo->id_periodo,
+    //                     'periodo' => $nota->periodo->periodo,
+    //                     'estado' => $nota->periodo->estado,
+    //                 ] : null,
+    //             ];
+    //         })->values()
+    //     ];
+    // })->values();
+
+    return response()->json([
+        // 'total_repetidores' => $estudiantes->count(),
+        // 'estudiantes' => $estudiantes,
+        'repetidores' => $repetidores
+    ]);
+}
+
+
+
+
+    
+public function estudiantesRepetidores2()
+{
+    // 1. Cargar todos los historiales con relaciones necesarias
+    $historiales = HistorialEstudiante::with(['estudiante.persona'])->get();
+
+    // 2. Agrupar por estudiante y grado
+    $agrupados = $historiales->groupBy(function ($historial) {
+        return $historial->id_estudiante . '-' . $historial->id_grado;
+    });
+
+    // 3. Filtrar solo estudiantes que repiten (REPROBADO + CURSANDO)
+    $repetidores = $agrupados->filter(function ($grupo) {
+        $estados = $grupo->pluck('estado')
+            ->map(fn($estado) => strtoupper(trim($estado)))
+            ->unique();
+
+        return $estados->contains('REPROBADO') && $estados->contains('CURSANDO');
+    });
+
+    // 4. Mapear resultados con notas reprobadas
+    $estudiantes = $repetidores->map(function ($grupo) {
+        $historial = $grupo->first(); // Tomamos uno del grupo para obtener estudiante/persona
+        $estudiante = $historial->estudiante;
+        $persona = $estudiante->persona;
+
+        // Obtener todas las notas con promedio < 7 de todos los historiales de ese estudiante-grado
+        $notasReprobadas = $grupo->flatMap(function ($h) {
+            return Nota::where('id_historial', $h->id_historial)
+                // ->where('promedio', '<', 7)
+                ->with('periodo')
+                ->get();
+        });
+
+        return [
+            'id_estudiante' => $estudiante->id_estudiante,
+            'nombre' => $persona->nombre,
+            'apellido' => $persona->apellido,
+            'notas' => $notasReprobadas->map(function ($nota) {
+                return [
+                    'id_nota' => $nota->id_nota,
+                    'actividad1' => $nota->actividad1,
+                    'actividad2' => $nota->actividad2,
+                    'actividad3' => $nota->actividad3,
+                    'actividadInt' => $nota->actividadInt,
+                    'examen' => $nota->examen,
+                    'promedio' => $nota->promedio,
+                    'periodo' => $nota->periodo ? [
+                        'id_periodo' => $nota->periodo->id_periodo,
+                        'periodo' => $nota->periodo->periodo,
+                        'estado' => $nota->periodo->estado,
+                    ] : null,
+                ];
+            })->values()
+        ];
+    })->values();
+
+    return response()->json([
+        'total_repetidores' => $estudiantes->count(),
+        'estudiantes' => $estudiantes,
+    ]);
+}
+
+
+
+
+
     /**
      * Store a newly created resource in storage.
      *
