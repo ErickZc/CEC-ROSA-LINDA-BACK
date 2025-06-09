@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Permisos;
+use App\Models\DocenteMateriaGrado;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,33 +41,36 @@ class PermisosController extends Controller
 
     public function getPermisosByDocente(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'grados' => 'required|array|min:1',
-            'grados.*' => 'integer|exists:Grado,id_grado',
-        ]);
+        $search = $request->input('search', '');
+        $docente = $request->input('docente');
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Se debe especificar un grado válido',
-            ], 400);
-        }
-        $nombre = $request->input('nombre', '');
-        $responsable = $request->input('responsable', '');
-        $grados = $request->input('grados');
+        $grados = DocenteMateriaGrado::with([
+            'docente.persona',
+            'grado'
+        ])
+            ->when($docente, function ($query) use ($docente) {
+                $query->whereHas('docente.persona', function ($q) use ($docente) {
+                    $q->where('id_persona', "$docente");
+                });
+            })
+            ->pluck('id_grado')
+            ->unique()
+            ->values();
+
 
         $permisos = Permisos::with([
             'historialestudiante.estudiante.persona',
             'historialestudiante.estudiante.responsableEstudiantes.responsable.persona',
-            'historialestudiante.grado'
+            'historialestudiante.grado',
         ])
-            ->when($nombre, function ($query) use ($nombre) {
-                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
-                    $q->where('nombre', 'like', "%{$nombre}%");
-                });
-            })
-            ->when($responsable, function ($query) use ($responsable) {
-                $query->whereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q) use ($responsable) {
-                    $q->where('nombre', 'like', "%{$responsable}%");
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('historialestudiante.estudiante.persona', function ($q2) use ($search) {
+                        $q2->where('nombre', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q3) use ($search) {
+                            $q3->where('nombre', 'like', "%{$search}%");
+                        });
                 });
             })
             ->when(!empty($grados), function ($query) use ($grados) {
@@ -87,6 +91,18 @@ class PermisosController extends Controller
      */
     public function store(Request $request)
     {
+        $permisoExistente = Permisos::where('id_historial', $request->input('id_historial'))
+            ->whereDate('fecha_inicio', $request->input('fecha_inicio'))
+            ->first();
+
+        if ($permisoExistente) {
+            return response()->json([
+                'message' => 'Ya existe un permiso para esta fecha de inicio.',
+                'conflict' => true,
+                'permiso_existente' => $permisoExistente
+            ], 409); // 409 Conflict
+        }
+
         DB::beginTransaction();
 
         try {

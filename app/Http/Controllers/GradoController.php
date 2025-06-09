@@ -49,6 +49,78 @@ class GradoController extends Controller
         return response()->json($grado);
     }
 
+    public function showGradoXturnoCiclo1(Request $request)
+    {
+        $turno = $request->query('turno'); 
+
+        if (!in_array($turno, ['MAÑANA', 'TARDE'])) {
+            return response()->json(['error' => 'Turno inválido'], 400);
+        }
+
+        $grado = Grado::with('seccion')
+            ->where('estado', 'ACTIVO')
+            ->where('turno', $turno)
+            ->whereIn('grado', ['Segundo', 'Tercero'])
+            ->get();
+
+
+        return response()->json($grado);
+    }
+
+    public function showGradoXturnoCiclo2(Request $request)
+    {
+        $turno = $request->query('turno'); 
+
+        if (!in_array($turno, ['MAÑANA', 'TARDE'])) {
+            return response()->json(['error' => 'Turno inválido'], 400);
+        }
+
+        $grado = Grado::with('seccion')
+            ->where('estado', 'ACTIVO')
+            ->where('turno', $turno)
+            ->whereIn('grado', ['Cuarto', 'Quinto', 'Sexto'])
+            ->get();
+
+
+        return response()->json($grado);
+    }
+
+    public function showGradoXturnoCiclo3(Request $request)
+    {
+        $turno = $request->query('turno'); 
+
+        if (!in_array($turno, ['MAÑANA', 'TARDE'])) {
+            return response()->json(['error' => 'Turno inválido'], 400);
+        }
+
+        $grado = Grado::with('seccion')
+            ->where('estado', 'ACTIVO')
+            ->where('turno', $turno)
+            ->whereIn('grado', ['Septimo', 'Octavo', 'Noveno'])
+            ->get();
+
+
+        return response()->json($grado);
+    }
+
+    public function showGradoXturnoCiclo4(Request $request)
+    {
+        $turno = $request->query('turno'); 
+
+        if (!in_array($turno, ['MAÑANA', 'TARDE'])) {
+            return response()->json(['error' => 'Turno inválido'], 400);
+        }
+
+        $grado = Grado::with('seccion')
+            ->where('estado', 'ACTIVO')
+            ->where('turno', $turno)
+            ->where('grado', 'like', '%Bachillerato%')
+            ->get();
+
+
+        return response()->json($grado);
+    }
+
     /**
      * Store a newly created resource in storage.
      *
