@@ -131,7 +131,15 @@ class EstudianteController extends Controller
             ->get();
 
         if ($asignaciones->isEmpty()) {
-            return response()->json(['message' => 'El docente no tiene asignaciones registradas.'], 404);
+            // return response()->json(['message' => 'El docente no tiene asignaciones registradas.'], 404);
+            return response()->json([
+                'rol' => 'DOCENTE',
+                'message' => 'El docente no tiene asignaciones registradas.',
+                'total_secciones' => 0,
+                'secciones' => [],
+                'grados' => [],
+                'materias' => []
+            ], 200); // <- Status 200 en vez de 404
         }
 
         $secciones = collect();
@@ -262,57 +270,211 @@ class EstudianteController extends Controller
         ]);
     }
 
-    public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion)
-    {
-        // Obtener los historiales de estudiantes filtrados por grado y sección
-        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-            ->whereHas('grado.seccion', function($query) use ($id_seccion) {
-                $query->where('id_seccion', $id_seccion);
-            })
-            ->with(['estudiante.persona'])
+//     public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion)
+// {
+//     // Obtener los historiales de estudiantes filtrados por grado y sección
+//     $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+//         ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+//             $query->where('id_seccion', $id_seccion);
+//         })
+//         ->with(['estudiante.persona'])
+//         ->get();
+
+//     $estudiantes = $historiales->map(function($historial) use ($id_materia) {
+//         // Obtener notas del historial y materia especificados
+//         $notas = Nota::where('id_historial', $historial->id_historial)
+//             ->where('id_materia', $id_materia)
+//             ->with('periodo')
+//             ->get();
+
+//         // Si no tiene notas, se le asigna una vacía para permitir la edición en frontend
+//         if ($notas->isEmpty()) {
+//             $notas = collect([
+//                 (object)[
+//                     'id_nota' => null,
+//                     'actividad1' => null,
+//                     'actividad2' => null,
+//                     'actividad3' => null,
+//                     'actividadInt' => null,
+//                     'examen' => null,
+//                     'promedio' => null,
+//                     'periodo' => null,
+//                 ]
+//             ]);
+//         }
+
+//         return [
+//             'estudiante' => [
+//                 'id_estudiante' => $historial->estudiante->id_estudiante,
+//                 'nombre' => $historial->estudiante->persona->nombre,
+//                 'apellido' => $historial->estudiante->persona->apellido,
+//             ],
+//             'notas' => $notas->map(function($nota) {
+//                 return [
+//                     'id_nota' => $nota->id_nota,
+//                     'actividad1' => $nota->actividad1,
+//                     'actividad2' => $nota->actividad2,
+//                     'actividad3' => $nota->actividad3,
+//                     'actividadInt' => $nota->actividadInt,
+//                     'examen' => $nota->examen,
+//                     'promedio' => $nota->promedio,
+//                     'periodo' => $nota->periodo ? [
+//                         'id_periodo' => $nota->periodo->id_periodo,
+//                         'periodo' => $nota->periodo->periodo,
+//                         'estado' => $nota->periodo->estado,
+//                     ] : null,
+//                 ];
+//             }),
+//         ];
+//     })->values();
+
+//     return response()->json([
+//         'id_grado' => $id_grado,
+//         'id_materia' => $id_materia,
+//         'id_seccion' => $id_seccion,
+//         'total_estudiantes' => $estudiantes->count(),
+//         'estudiantes' => $estudiantes,
+//     ]);
+// }
+
+// public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion, $id_periodo)
+// {
+//     // Obtener historiales filtrados por grado, sección y estado 'CURSANDO'
+//     $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+//         ->where('estado', 'CURSANDO')
+//         ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+//             $query->where('id_seccion', $id_seccion);
+//         })
+//         ->with(['estudiante.persona'])
+//         ->get();
+
+//     $estudiantes = $historiales->map(function($historial) use ($id_materia, $id_periodo) {
+//         // Buscar notas del estudiante filtradas por materia y periodo
+//         $notas = Nota::where('id_historial', $historial->id_historial)
+//             ->where('id_materia', $id_materia)
+//             ->where('id_periodo', $id_periodo)
+//             ->with('periodo')
+//             ->get();
+
+//         // Si no hay notas para este periodo, no incluimos al estudiante
+//         if ($notas->isEmpty()) {
+//             return null;
+//         }
+
+//         return [
+//             'estudiante' => [
+//                 'id_estudiante' => $historial->estudiante->id_estudiante,
+//                 'nombre' => $historial->estudiante->persona->nombre,
+//                 'apellido' => $historial->estudiante->persona->apellido,
+//             ],
+//             'notas' => $notas->map(function($nota) {
+//                 return [
+//                     'id_nota' => $nota->id_nota,
+//                     'actividad1' => $nota->actividad1,
+//                     'actividad2' => $nota->actividad2,
+//                     'actividad3' => $nota->actividad3,
+//                     'actividadInt' => $nota->actividadInt,
+//                     'examen' => $nota->examen,
+//                     'promedio' => $nota->promedio,
+//                     'periodo' => $nota->periodo ? [
+//                         'id_periodo' => $nota->periodo->id_periodo,
+//                         'periodo' => $nota->periodo->periodo,
+//                         'estado' => $nota->periodo->estado,
+//                     ] : null,
+//                 ];
+//             }),
+//         ];
+//     })
+//     ->filter() // Elimina los null (estudiantes sin nota en ese periodo)
+//     ->values();
+
+//     return response()->json([
+//         'id_grado' => $id_grado,
+//         'id_materia' => $id_materia,
+//         'id_seccion' => $id_seccion,
+//         'id_periodo' => $id_periodo,
+//         'total_estudiantes' => $estudiantes->count(),
+//         'estudiantes' => $estudiantes,
+//     ]);
+// }
+
+
+
+public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_seccion, $id_periodo)
+{
+    $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+        ->where('estado', 'CURSANDO')
+        ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+            $query->where('id_seccion', $id_seccion);
+        })
+        ->with(['estudiante.persona'])
+        ->get();
+
+    $estudiantes = $historiales->map(function($historial) use ($id_materia, $id_periodo) {
+        // Obtener todas las notas del estudiante en esa materia
+        $notas = Nota::where('id_historial', $historial->id_historial)
+            ->where('id_materia', $id_materia)
+            ->with('periodo')
             ->get();
 
-        $estudiantes = $historiales->map(function($historial) use ($id_materia) {
-            // Obtener notas del historial y materia especificados
-            $notas = Nota::where('id_historial', $historial->id_historial)
-                ->where('id_materia', $id_materia)
-                ->with('periodo') // relación periodo en modelo Nota
-                ->get();
+        // Filtrar solo las notas del periodo indicado
+        $notasFiltradas = $notas->filter(function($nota) use ($id_periodo) {
+            return $nota->id_periodo == $id_periodo;
+        });
 
-            return [
-                'estudiante' => [
-                    'id_estudiante' => $historial->estudiante->id_estudiante,
-                    'nombre' => $historial->estudiante->persona->nombre,
-                    'apellido' => $historial->estudiante->persona->apellido,
-                    // Agrega otros datos si quieres
-                ],
-                'notas' => $notas->map(function($nota) {
-                    return [
-                        'id_nota' => $nota->id_nota,
-                        'actividad1' => $nota->actividad1,
-                        'actividad2' => $nota->actividad2,
-                        'actividad3' => $nota->actividad3,
-                        'actividadInt' => $nota->actividadInt,
-                        'examen' => $nota->examen,
-                        'promedio' => $nota->promedio,
-                        'periodo' => $nota->periodo ? [
-                            'id_periodo' => $nota->periodo->id_periodo,
-                            'periodo' => $nota->periodo->periodo,
-                            'estado' => $nota->periodo->estado,
-                        ] : null,
-                    ];
-                }),
-            ];
-        })->values();
+        // Si no hay notas del periodo, agregar una nota vacía
+        if ($notasFiltradas->isEmpty()) {
+            $notasFiltradas = collect([
+                (object)[
+                    'id_nota' => null,
+                    'actividad1' => null,
+                    'actividad2' => null,
+                    'actividad3' => null,
+                    'actividadInt' => null,
+                    'examen' => null,
+                    'promedio' => null,
+                    'periodo' => null,
+                ]
+            ]);
+        }
 
-        return response()->json([
-            'id_grado' => $id_grado,
-            'id_materia' => $id_materia,
-            'id_seccion' => $id_seccion,
-            'total_estudiantes' => $estudiantes->count(),
-            'estudiantes' => $estudiantes,
-        ]);
-    }
+        return [
+            'estudiante' => [
+                'id_estudiante' => $historial->estudiante->id_estudiante,
+                'nombre' => $historial->estudiante->persona->nombre,
+                'apellido' => $historial->estudiante->persona->apellido,
+            ],
+            'notas' => $notasFiltradas->map(function($nota) {
+                return [
+                    'id_nota' => $nota->id_nota,
+                    'actividad1' => $nota->actividad1,
+                    'actividad2' => $nota->actividad2,
+                    'actividad3' => $nota->actividad3,
+                    'actividadInt' => $nota->actividadInt,
+                    'examen' => $nota->examen,
+                    'promedio' => $nota->promedio,
+                    'periodo' => $nota->periodo ? [
+                        'id_periodo' => $nota->periodo->id_periodo,
+                        'periodo' => $nota->periodo->periodo,
+                        'estado' => $nota->periodo->estado,
+                    ] : null,
+                ];
+            }),
+        ];
+    })->values();
+
+    return response()->json([
+        'id_grado' => $id_grado,
+        'id_materia' => $id_materia,
+        'id_seccion' => $id_seccion,
+        'id_periodo' => $id_periodo,
+        'total_estudiantes' => $estudiantes->count(),
+        'estudiantes' => $estudiantes,
+    ]);
+}
+
+
+
 
 
     public function estudiantesConNotasFiltradosNew($id_grado, $id_materia, $id_seccion)
