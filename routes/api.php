@@ -143,11 +143,13 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
     Route::get('/materias/{id}', [MateriaController::class, 'show']);
     Route::get('/estudiantes/{id}', [EstudianteController::class, 'show']);
-    Route::get('/estudiantes/seccion/{id}', [EstudianteController::class, 'searchSeccion']);
-    Route::get('/estudiantes/seccion/{idSeccion}/rol/{idRol}', [EstudianteController::class, 'filterDataSecciones']);
+    // Route::get('/estudiantes/seccion/{id}', [EstudianteController::class, 'searchSeccion']);
+    // Route::get('/estudiantes/seccion/{idSeccion}/rol/{idRol}', [EstudianteController::class, 'filterDataSecciones']);
     Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
     // Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
-    Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
+    // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
+    // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
+    Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     Route::get('/estudiantes/notasNew/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltradosNew']);
     // Route::put('/notas/{id}', [NotaController::class, 'update']);
     Route::match(['put', 'post'], '/notas/{id?}', [NotaController::class, 'update']);
