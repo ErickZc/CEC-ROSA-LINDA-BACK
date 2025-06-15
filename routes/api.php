@@ -2,28 +2,31 @@
 
 use App\Models\Estudiante;
 use Illuminate\Http\Request;
+use App\Models\DocenteMateriaGrado;
+use App\Models\HistorialEstudiante;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\NotaController;
+use App\Http\Controllers\CicloController;
 use App\Http\Controllers\GradoController;
+use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\DocenteController;
 use App\Http\Controllers\MateriaController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\PersonaController;
 use App\Http\Controllers\SeccionController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\PermisosController;
 use App\Http\Controllers\RecoveryController;
+use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\EstudianteController;
 use App\Http\Controllers\RolUsuarioController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
-use App\Models\DocenteMateriaGrado;
-use App\Http\Controllers\PermisosController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CicloController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +100,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/usuarios/rol/{idRol}', [UsuarioController::class, 'index']);
     Route::get('/usuarios/all', [UsuarioController::class, 'allUsuarios']);
     Route::get('/estudiantes/all', [EstudianteController::class, 'allEstudiantes']);
+    Route::get('/estudiantes/allEstudentPerson', [EstudianteController::class, 'allEstudentByPersonInfo']);
     Route::get('/docentes/all', [DocenteController::class, 'allDocentes']);
     Route::get('/personas/all', [PersonaController::class, 'allPersonas']);
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
@@ -107,6 +111,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);
     Route::get('/ciclos/all', [CicloController::class, 'allCiclos']);
     Route::get('/roles/all', [RolUsuarioController::class, 'allRoles']);
+    Route::get('/historiales/all', [HistorialEstudianteController::class, 'allHistorial']);
 
     //Reportes
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
@@ -154,4 +159,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     //inhabilitar token al cerrar sesion
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    //generar boletas
+    Route::get('/reportes_boletaFinal/{id_estudiante}', [ReportesController::class, 'generarBoletaXestudiante']);
 });

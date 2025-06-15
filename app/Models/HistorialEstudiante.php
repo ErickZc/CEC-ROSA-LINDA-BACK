@@ -29,6 +29,11 @@ class HistorialEstudiante extends Model
     }
     public function notas()
     {
-        return $this->hasMany(Nota::class, 'id_historial_estudiante', 'id_historial_estudiante');
+        return $this->hasMany(Nota::class, 'id_historial', 'id_historial');
+    }
+
+    public function inasistencias()
+    {
+        return $this->hasMany(Inasistencia::class, 'id_historial');
     }
 }
