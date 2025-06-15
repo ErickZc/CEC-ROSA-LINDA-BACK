@@ -27,28 +27,39 @@ class HistorialEstudianteController extends Controller
         $search = $request->input('search', '');
 
         $historiales = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
-            ->whereHas('estudiante', function ($query) use ($search) {
-                $query->where('estado', 'ACTIVO')
-                    ->where(function ($q) use ($search) {
-                        $q->whereHas('persona', function ($q2) use ($search) {
-                            $q2->where('nombre', 'like', "%{$search}%")
-                            ->orWhere('apellido', 'like', "%{$search}%");
-                        })
-                        ->orWhere('correo', 'like', "%{$search}%")
-                        ->orWhere('nie', 'like', "%{$search}%");  // <-- aquí agregamos búsqueda por NIE
-                    });
+            ->where('estado', 'CURSANDO')
+            ->whereHas('estudiante', function ($query) {
+                $query->where('estado', 'ACTIVO');
             })
-            ->orWhereHas('grado', function ($q) use ($search) {
-                $q->where('grado', 'like', "%{$search}%")
-                ->orWhereHas('seccion', function ($q2) use ($search) {
-                    $q2->where('seccion', 'like', "%{$search}%");
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    // Buscar por nombre o apellido de la persona
+                    $q->whereHas('estudiante.persona', function ($q2) use ($search) {
+                        $q2->where('nombre', 'like', "%{$search}%")
+                        ->orWhere('apellido', 'like', "%{$search}%");
+                    })
+                    // Buscar por correo o NIE del estudiante
+                    ->orWhereHas('estudiante', function ($q3) use ($search) {
+                        $q3->where('correo', 'like', "%{$search}%")
+                        ->orWhere('nie', 'like', "%{$search}%");
+                    })
+                    // Buscar por grado o sección
+                    ->orWhereHas('grado', function ($q4) use ($search) {
+                        $q4->where('grado', 'like', "%{$search}%")
+                        ->orWhereHas('seccion', function ($q5) use ($search) {
+                            $q5->where('seccion', 'like', "%{$search}%");
+                        });
+                    })
+                    // Buscar por año
+                    ->orWhere('anio', 'like', "%{$search}%");
                 });
             })
-            ->orWhere('anio', 'like', "%{$search}%")
             ->paginate(10);
 
         return response()->json($historiales);
     }
+
+
 
     /**
      * Store a newly created resource in storage.
@@ -153,8 +164,61 @@ class HistorialEstudianteController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $rules = [
+            'id_grado'        => 'required|exists:Grado,id_grado',
+            'anio'            => 'required|digits:4|integer|min:2000|max:' . date('Y'),
+            'id_responsable'  => 'required|exists:Responsable,id_responsable',
+            'parentesco'      => 'required|string|max:50',
+        ];
+
+        $validated = Validator::make($request->all(), $rules)->validate();
+
+        DB::beginTransaction();
+
+        try {
+            // Buscar al estudiante
+            $estudiante = Estudiante::findOrFail($id);
+
+            // Crear nuevo historial solo si no existe para el año actual
+            $anio = $validated['anio'];
+            $historial = HistorialEstudiante::where('id_estudiante', $estudiante->id_estudiante)
+                ->where('anio', $anio)
+                ->first();
+
+            if (!$historial) {
+                HistorialEstudiante::create([
+                    'id_estudiante' => $estudiante->id_estudiante,
+                    'id_grado'      => $validated['id_grado'],
+                    'anio'          => $anio,
+                    'estado'        => 'CURSANDO',
+                ]);
+            }
+
+            $relacion = ResponsableEstudiante::where('id_estudiante', $estudiante->id_estudiante)->first();
+
+            if ($relacion) {
+                $relacion->update([
+                    'id_responsable' => $validated['id_responsable'],
+                    'parentesco'     => $validated['parentesco'],
+                    'estado'         => 'ACTIVO',
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Historial creado (si no existía) y responsable actualizado correctamente.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Error en el proceso',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     /**
      * Remove the specified resource from storage.

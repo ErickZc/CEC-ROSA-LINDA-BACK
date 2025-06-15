@@ -23,7 +23,13 @@ class EstudianteController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function allEstudiantes()
+    public function allEstudentByPersonInfo()
+    {
+        $estudiantes = Estudiante::with(['persona', 'responsableEstudiantes.responsable.persona'])->get();
+        return $estudiantes;
+    }
+    
+     public function allEstudiantes()
     {
         return Estudiante::all();
     }
