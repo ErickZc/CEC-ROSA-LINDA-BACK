@@ -167,4 +167,5 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 
     //generar boletas
     Route::get('/reportes_boletaFinal/{id_estudiante}', [ReportesController::class, 'generarBoletaXestudiante']);
+    Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
 });
