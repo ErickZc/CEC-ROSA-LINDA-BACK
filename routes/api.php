@@ -27,6 +27,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
+use App\Http\Controllers\AgentAIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -162,4 +163,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 
     //generar boletas
     Route::get('/reportes_boletaFinal/{id_estudiante}', [ReportesController::class, 'generarBoletaXestudiante']);
+
+    //Agente para responsable
+    Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
+    Route::post('/agentai/importacion', [AgentAIController::class, 'importarDocumentos']);
 });
