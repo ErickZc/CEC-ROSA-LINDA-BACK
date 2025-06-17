@@ -54,126 +54,61 @@ class NotaController extends Controller
         return response()->json($historiales); // esto lo usas para poblar el <select>
     }
 
-    // // Guardar una nueva nota
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'historial_estudiante_id' => 'required|exists:historial_estudiantes,id',
-    //         'valor' => 'required|numeric|min:0|max:100',
-    //         'observacion' => 'nullable|string|max:255',
-    //     ]);
+    public function store(Request $request)
+    {
 
-    //     $nota = Nota::create($validated);
+        // Buscar historial o crearlo si no existe
+        $historial = HistorialEstudiante::firstOrCreate(
+            [
+                'id_estudiante' => $request->id_estudiante,
+                'id_grado' => $request->id_grado,
+            ],
+            [
+                'anio' => now()->year,
+                'estado' => 'CURSANDO'
+            ]
+        );
 
-    //     return response()->json(['message' => 'Nota creada con éxito', 'nota' => $nota], 201);
-    // }
+        // Verificar si ya existe una nota con la misma materia y periodo
+        $existeNota = Nota::where('id_historial', $historial->id_historial)
+            ->where('id_materia', $request->id_materia)
+            ->where('id_periodo', $request->id_periodo)
+            ->exists();
 
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'estudiante_id' => 'required|exists:estudiantes,id',
-    //         'materia_id' => 'required|exists:materias,id',
-    //         'valor' => 'required|numeric|min:0|max:100',
-    //         'observacion' => 'nullable|string|max:255',
-    //     ]);
+        if ($existeNota) {
+            return response()->json([
+                'message' => 'Ya existe una nota registrada para este estudiante en la materia y periodo especificado.'
+            ], 409);
+        }
 
-    //     $añoActual = Carbon::now()->year;
+        // $promedio = collect([
+        //     $request->actividad1,
+        //     $request->actividad2,
+        //     $request->actividad3,
+        //     $request->actividadInt,
+        //     $request->examen
+        // ])->filter()->avg();
 
-    //     $historial = HistorialEstudiante::where('estudiante_id', $validated['estudiante_id'])
-    //                     ->whereYear('anio', $añoActual)
-    //                     ->where('materia_id', $validated['materia_id'])
-    //                     ->first();
+        $nota = Nota::create([
+            'id_historial' => $historial->id_historial,
+            'id_materia' => $request->id_materia,
+            'id_periodo' => $request->id_periodo,
+            'actividad1' => $request->actividad1,
+            'actividad2' => $request->actividad2,
+            'actividad3' => $request->actividad3,
+            'actividadInt' => $request->actividadInt,
+            'examen' => $request->examen,
+            'id_periodo' => $request->id_periodo,
+        ]);
 
-    //     if (!$historial) {
-    //         return response()->json(['error' => 'No se encontró historial para este estudiante en el año actual.'], 404);
-    //     }
-
-    //     $nota = Nota::create([
-    //         'historial_estudiante_id' => $historial->id,
-    //         'valor' => $validated['valor'],
-    //         'observacion' => $validated['observacion'] ?? null,
-    //     ]);
-
-    //     return response()->json(['message' => 'Nota creada con éxito', 'nota' => $nota], 201);
-    // }
-
-public function store(Request $request)
-{
-    // Validación básica
-    // $request->validate([
-    //     'id_estudiante' => 'required|exists:estudiantes,id_estudiante',
-    //     'id_grado' => 'required|exists:grados,id_grado',
-    //     'id_materia' => 'required|exists:materias,id_materia',
-    //     'id_seccion' => 'required|exists:secciones,id_seccion',
-    //     'id_periodo' => 'required|exists:periodos,id_periodo',
-    //     'actividad1' => 'nullable|numeric|min:0|max:20',
-    //     'actividad2' => 'nullable|numeric|min:0|max:20',
-    //     'actividad3' => 'nullable|numeric|min:0|max:20',
-    //     'actividadInt' => 'nullable|numeric|min:0|max:20',
-    //     'examen' => 'nullable|numeric|min:0|max:20',
-    // ]);
-
-    // Buscar historial o crearlo si no existe
-    $historial = HistorialEstudiante::firstOrCreate(
-        [
-            'id_estudiante' => $request->id_estudiante,
-            'id_grado' => $request->id_grado,
-        ],
-        [
-            'anio' => now()->year,
-            'estado' => 'CURSANDO'
-        ]
-    );
-
-    // Verificar si ya existe una nota con la misma materia y periodo
-    $existeNota = Nota::where('id_historial', $historial->id_historial)
-        ->where('id_materia', $request->id_materia)
-        ->where('id_periodo', $request->id_periodo)
-        ->exists();
-
-    if ($existeNota) {
         return response()->json([
-            'message' => 'Ya existe una nota registrada para este estudiante en la materia y periodo especificado.'
-        ], 409);
+            'message' => 'Nota creada exitosamente',
+            // 'nota' => $nota
+            'historial' => $historial,
+            'existeNota' => $existeNota,
+            'id_periodo' => $request->id_periodo,
+        ], 200);
     }
-
-    // $promedio = collect([
-    //     $request->actividad1,
-    //     $request->actividad2,
-    //     $request->actividad3,
-    //     $request->actividadInt,
-    //     $request->examen
-    // ])->filter()->avg();
-
-    $nota = Nota::create([
-        'id_historial' => $historial->id_historial,
-        'id_materia' => $request->id_materia,
-        'id_periodo' => $request->id_periodo,
-        'actividad1' => $request->actividad1,
-        'actividad2' => $request->actividad2,
-        'actividad3' => $request->actividad3,
-        'actividadInt' => $request->actividadInt,
-        'examen' => $request->examen,
-        'id_periodo' => $request->id_periodo,
-    ]);
-
-    return response()->json([
-        'message' => 'Nota creada exitosamente',
-        // 'nota' => $nota
-        'historial' => $historial,
-        'existeNota' => $existeNota,
-        'id_periodo' => $request->id_periodo,
-    ], 200);
-}
-
-
-
-
-
-
-
-
-
 
     // Obtener una nota específica
     public function show($id)
@@ -182,47 +117,68 @@ public function store(Request $request)
         return response()->json($nota);
     }
 
-    // Actualizar una nota
-    // public function update(Request $request, $id)
-    // {
-    //     $validated = $request->validate([
-    //         'historial_estudiante_id' => 'required|exists:historial_estudiantes,id',
-    //         'valor' => 'required|numeric|min:0|max:100',
-    //         'observacion' => 'nullable|string|max:255',
-    //     ]);
-
-    //     $nota = Nota::findOrFail($id);
-    //     $nota->update($validated);
-
-    //     return response()->json(['message' => 'Nota actualizada con éxito', 'nota' => $nota]);
-    // }
-
-   public function update(Request $request, $id)
-{
-    $validated = $request->validate([
-        'actividad1' => 'required|numeric|min:0|max:20',
-        'actividad2' => 'required|numeric|min:0|max:20',
-        'actividad3' => 'required|numeric|min:0|max:20',
-        'actividadInt' => 'required|numeric|min:0|max:20',
-        'examen' => 'required|numeric|min:0|max:20',
-    ]);
-
-    $nota = Nota::where('id_nota', $id)->firstOrFail();
-
-    // $validated['promedio'] = (
-    //     $validated['actividad1'] +
-    //     $validated['actividad2'] +
-    //     $validated['actividad3'] +
-    //     $validated['actividadInt'] +
-    //     $validated['examen']
-    // ) / 5;
-
-    $nota->update($validated);
-
-    return response()->json(['message' => 'Nota actualizada correctamente', 'nota' => $nota]);
-}
+    public function update(Request $request, $id = null)
+    {
+        // Validar campos requeridos
+        $validated = $request->validate([
+            'actividad1' => 'required|numeric|min:0|max:20',
+            'actividad2' => 'required|numeric|min:0|max:20',
+            'actividad3' => 'required|numeric|min:0|max:20',
+            'actividadInt' => 'required|numeric|min:0|max:20',
+            'examen' => 'required|numeric|min:0|max:20',
+            'id_estudiante' => 'required|integer',
+            'id_grado' => 'required|integer', // sin exists
+            'id_materia' => 'required|integer',
+            'id_periodo' => 'required|integer',
+            'anio' => 'required|numeric',
+        ]);
 
 
+        // Calcular el promedio
+        // $validated['promedio'] = (
+        //     $validated['actividad1'] +
+        //     $validated['actividad2'] +
+        //     $validated['actividad3'] +
+        //     $validated['actividadInt'] +
+        //     $validated['examen']
+        // ) / 5;
+
+        // Buscar o crear historial
+        $historial = HistorialEstudiante::firstOrCreate(
+            [
+                'id_estudiante' => $validated['id_estudiante'],
+                'id_grado' => $validated['id_grado'],
+                'anio' => $validated['anio'],
+            ],
+            ['estado' => 'CURSANDO']
+        );
+
+        $validated['id_historial'] = $historial->id_historial;
+
+        // Buscar nota por ID si se pasó, o buscar por combinación única
+        $nota = $id !== null
+            ? Nota::find($id)
+            : Nota::where('id_historial', $validated['id_historial'])
+                ->where('id_materia', $validated['id_materia'])
+                ->where('id_periodo', $validated['id_periodo'])
+                ->first();
+
+        if ($nota) {
+            $nota->update($validated);
+            $mensaje = 'Nota actualizada correctamente';
+        } else {
+            $nota = Nota::create($validated);
+            $mensaje = 'Nota creada correctamente';
+        }
+
+        return response()->json([
+            'message' => $mensaje,
+            'nota' => $nota
+        ]);
+        // return response()->json([
+        //     'message' => 'OK'
+        // ]);
+    }
 
     // Eliminar una nota
     public function destroy($id)
