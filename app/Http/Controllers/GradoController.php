@@ -22,7 +22,7 @@ class GradoController extends Controller
     {
         $grados = Grado::with('seccion')
         ->where('estado', 'ACTIVO')
-        ->orderBy('grado', 'asc')
+        ->orderBy('grado', 'desc')
         ->get();
 
         return response()->json($grados);

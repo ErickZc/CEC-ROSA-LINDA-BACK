@@ -8,8 +8,14 @@ use Carbon\CarbonPeriod;
 use App\Models\Estudiante;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Grado;
 use App\Models\HistorialEstudiante;
+use App\Models\Materia;
+use App\Models\Docente;
+use App\Models\DocenteMateriaGrado;
+use App\Models\Persona;
+use App\Models\Periodo;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReportesController extends Controller
@@ -140,65 +146,124 @@ class ReportesController extends Controller
         ])->stream($nombreArchivo);
     }
 
-    //traer data para mostrar en la vista
-    /*public function mostrarBoletaNotas($id_grado, Request $request)
+    public function generarReporteNotasPDF($id_grado, $id_materia, $id_periodo, $turno)
     {
-        $anio = $request->input('anio', date('Y'));
+        $turno = strtoupper(urldecode($turno));
 
-        if (!$id_grado) {
-            return response()->json(['message' => 'Debe proporcionar un id de grado'], 400);
+        $grado = Grado::where('id_grado', $id_grado)
+            ->where('turno', $turno)
+            ->with('seccion')
+            ->first();
+
+        if (!$grado) {
+            return response()->json([
+                'message' => 'Grado con el turno no tiene estudiantes asociados.'
+            ], 404);
         }
 
-        $historiales = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
-            ->where('anio', $anio)
+        $periodo = Periodo::where('id_periodo', $id_periodo)->first();
+        $nombrePeriodo = $periodo ? $periodo->periodo : 'SIN_PERIODO';
+
+        $id_seccion = $grado->id_seccion;
+
+        $materia = Materia::find($id_materia);
+        if (!$materia) {
+            $materia= '';
+        }
+
+        $docenteMateria = DocenteMateriaGrado::with('docente.persona')
             ->where('id_grado', $id_grado)
+            ->where('id_materia', $id_materia)
+            ->where('estado', 'ACTIVO')
+            ->first();
+
+
+        $nombreDocente = $docenteMateria && $docenteMateria->docente && $docenteMateria->docente->persona
+        ? $docenteMateria->docente->persona->nombre . ' ' . $docenteMateria->docente->persona->apellido
+        : 'Sin docente asignado';
+
+
+        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+            ->where('estado', 'CURSANDO')
+            ->whereHas('grado', function($query) use ($id_seccion) {
+                $query->where('id_seccion', $id_seccion);
+            })
+            ->with(['estudiante.persona'])
             ->get();
 
-        if ($historiales->isEmpty()) {
-            return response()->json(['message' => 'No se encontraron historiales para ese grado y año'], 404);
-        }
+        $estudiantes = $historiales->map(function ($historial) use ($id_materia, $id_periodo) {
+            $notas = Nota::where('id_historial', $historial->id_historial)
+                ->where('id_materia', $id_materia)
+                ->with('periodo')
+                ->get();
 
-        $boletas = [];
+            $notasFiltradas = $notas->filter(function ($nota) use ($id_periodo) {
+                return $nota->id_periodo == $id_periodo;
+            });
 
-        foreach ($historiales as $historial) {
-            $notas = $historial->notas()->with('materia.ciclo')->get()->groupBy(fn ($item) => $item->materia->nombre_materia ?? 'Sin nombre');
-
-            $primerNota = $notas->first()?->first();
-            $cicloNombre = $primerNota?->materia?->ciclo?->nombre ?? '';
-            $isBachillerato = Str::contains(strtolower($cicloNombre), 'bachillerato');
-
-            foreach ($notas as $materia => $registros) {
-                $p1 = $registros->firstWhere('id_periodo', 1);
-                $p2 = $registros->firstWhere('id_periodo', 2);
-                $p3 = $registros->firstWhere('id_periodo', 3);
-                $p4 = $isBachillerato ? $registros->firstWhere('id_periodo', 4) : null;
-
-                $totalPeriodos = $isBachillerato ? 4 : 3;
-                $suma = ($p1?->promedio ?? 0) + ($p2?->promedio ?? 0) + ($p3?->promedio ?? 0);
-                if ($isBachillerato) $suma += ($p4?->promedio ?? 0);
-
-                $promedio = $suma / $totalPeriodos;
-                $estado = $promedio >= 5 ? 'Aprobado' : 'Reprobado';
-
-                $boletas[] = [
-                    'nie' => $historial->estudiante->nie,
-                    'nombre' => $historial->estudiante->persona->apellido . ', ' . $historial->estudiante->persona->nombre,
-                    'materia' => $materia,
-                    'periodo1' => $p1?->promedio ?? null,
-                    'periodo2' => $p2?->promedio ?? null,
-                    'periodo3' => $p3?->promedio ?? null,
-                    'periodo4' => $isBachillerato ? ($p4?->promedio ?? null) : null,
-                    'promedio' => round($promedio, 1),
-                    'estado' => $estado,
-                ];
+            if ($notasFiltradas->isEmpty()) {
+                $notasFiltradas = collect([
+                    (object)[
+                        'id_nota' => null,
+                        'actividad1' => null,
+                        'actividad2' => null,
+                        'actividad3' => null,
+                        'actividadInt' => null,
+                        'examen' => null,
+                        'promedio' => null,
+                        'periodo' => null,
+                    ]
+                ]);
             }
-        }
 
-        return response()->json([
-            'datos' => $boletas,
-            'anio' => $anio,
+            return [
+                'estudiante' => [
+                    'id_estudiante' => $historial->estudiante->id_estudiante,
+                    'nombre' => $historial->estudiante->persona->nombre,
+                    'apellido' => $historial->estudiante->persona->apellido,
+                ],
+                'notas' => $notasFiltradas->map(function ($nota) {
+                    return [
+                        'id_nota' => $nota->id_nota,
+                        'actividad1' => $nota->actividad1,
+                        'actividad2' => $nota->actividad2,
+                        'actividad3' => $nota->actividad3,
+                        'actividadInt' => $nota->actividadInt,
+                        'examen' => $nota->examen,
+                        'promedio' => $nota->promedio,
+                        'periodo' => $nota->periodo ? [
+                            'id_periodo' => $nota->periodo->id_periodo,
+                            'periodo' => $nota->periodo->periodo,
+                            'estado' => $nota->periodo->estado,
+                        ] : null,
+                    ];
+                }),
+            ];
+        });
+
+        $nombreArchivo = strtoupper(urldecode("Notas_{$grado->grado}_{$grado->seccion->seccion}_{$materia->nombre_materia}_{$nombrePeriodo}_{$grado->turno}")) . ".pdf";
+
+        $data = [
+            'grado' => $grado->grado,
+            'seccion' => $grado->seccion->seccion,
+            'turno' => $grado->turno,
+            'materia' => $materia->nombre_materia, 
+            'docente' => $nombreDocente,
+            'estudiantes' => $estudiantes,
+            'institucion' => 'Complejo Educativo Col. Rosa Linda',
+            'anio' => Carbon::now()->year,
+            'periodo' => $nombrePeriodo
+        ];
+
+        $pdf = Pdf::loadView('reportes.reporteNotas', $data);
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, $nombreArchivo, [
+            'Content-Type' => 'application/pdf',
         ]);
-    }*/
+    }   
+
     public function mostrarBoletaNotas($id_grado, Request $request)
     {
         $anio = $request->input('anio', date('Y'));
