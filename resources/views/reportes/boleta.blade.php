@@ -27,7 +27,7 @@
         </tr>
 
         @php
-            $gradoTexto = strtolower($historial->grado->grado); // Asegura comparación sin mayúsculas
+            $gradoTexto = strtolower($historial->grado->grado);
 
             // Determinar si es bachillerato
             $esBachillerato = str_contains($gradoTexto, 'año') || str_contains($gradoTexto, 'bachillerato');
@@ -86,24 +86,21 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($notas as $materiaNombre => $registros)
+            @forelse($notas as $materiaNombre => $registros)
                 @php 
                     $p1 = $registros->firstWhere('id_periodo', 1);
                     $p2 = $registros->firstWhere('id_periodo', 2);
                     $p3 = $registros->firstWhere('id_periodo', 3);
                     $p4 = $isBachillerato ? $registros->firstWhere('id_periodo', 4) : null;
 
-                    // Número total de periodos según ciclo
                     $totalPeriodos = $isBachillerato ? 4 : 3;
 
-                    // Sumar las notas, considerando 0 si no hay nota
                     $sumaNotas = 
                         ($p1?->promedio ?? 0) + 
                         ($p2?->promedio ?? 0) + 
                         ($p3?->promedio ?? 0) + 
                         ($isBachillerato ? ($p4?->promedio ?? 0) : 0);
 
-                    // Calcular promedio dividiendo entre total periodos
                     $promedio = $sumaNotas / $totalPeriodos;
 
                     $estado = $promedio >= 5 ? 'Aprobado' : 'Reprobado';
@@ -119,8 +116,14 @@
                     <td>{{ number_format($promedio, 1) }}</td>
                     <td>{{ $estado }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="{{ $isBachillerato ? 6 : 5 }}" style="text-align: center;">No hay notas registradas</td>
+                    <td>-</td>
+                </tr>
+            @endforelse
         </tbody>
+
     </table>
 
     <div class="firmas">
