@@ -20,6 +20,7 @@
             border: 1px solid #000;
             padding: 3px;
             height: 15px;
+            width: 20px;
             text-align: center;
         }
 
@@ -106,7 +107,13 @@
         .fila-impar {
             background-color:rgb(255, 255, 255);
         }
+.promedio-alto {
+        color: green;
+    }
 
+    .promedio-bajo {
+        color: red;
+    }
 
     </style>
 </head>
@@ -116,15 +123,15 @@
         <thead>
             <tr>
                 <th rowspan="5" class="header-text-number">Nº</th>
-                <th colspan="1" class="align-left" style="font-weight: normal !important;">Docente: <strong>{{ $docente }}</strong></th>
+                <th colspan="5" class="align-left" style="font-weight: normal !important;">Docente: <strong>{{ $docente }}</strong></th>
                 <th colspan="5" class="align-left" style="font-weight: normal !important;">Asignatura: <strong>{{ $materia }}</strong></th>
-                <th colspan="4" class="align-left" style="font-weight: normal !important;">Grado: <strong>{{ $grado }}</strong></th>
+                <th colspan="3" class="align-left" style="font-weight: normal !important;">Grado: <strong>{{ $grado }}</strong></th>
                 <th colspan="3" class="align-left" style="font-weight: normal !important;">Sección: <strong>"{{ $seccion }}"</strong></th>
             </tr>
             <tr>
-                <th rowspan="4" class="header-text-name">Alumnos</th>
+                <th rowspan="4" colspan="6" class="header-text-name">Alumnos</th>
                 <th colspan="4" class="align-left" style="font-weight: normal !important;">Trimestre: <strong>{{ $periodo }}</th>
-                <th colspan="8">
+                <th colspan="6">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span>{{ $institucion }}</span>
                         <span>{{ $anio }}</span>
@@ -136,7 +143,7 @@
                 <th rowspan="3" class="vertical-header bg-orange">P<br>R<br>O<br>M</th>
                 <th rowspan="3">actividad Integradora<br><span>(35%)</span></th>
                 <th rowspan="3" class="vertical-header bg-orange">P<br>R<br>O<br>M</th>
-                <th rowspan="3">prueba objetiva<br><span>(30%)</span></th>
+                <th rowspan="3" colspan="2">prueba objetiva<br><span>(30%)</span></th>
                 <th rowspan="3" class="vertical-header bg-orange">P<br>R<br>O<br>M</th>
                 <th rowspan="3" class="vertical-word bg-orange">
                     <div class="vertical-table">
@@ -148,15 +155,15 @@
                         <div class="vertical-row"><span> </span><span> </span></div>
                     </div>
                 </th>
-                <th colspan="3">Proceso de recuperación<br><span>(35%)</span></th>
+                <!-- <th colspan="3">Proceso de recuperación<br><span>(35%)</span></th> -->
             </tr>
             <tr>
                 <th>Act.</th>
                 <th>Act.</th>
                 <th>Act.</th>
-                <th rowspan="2">R</th>
+                <!-- <th rowspan="2">R</th>
                 <th rowspan="2">PR</th>
-                <th rowspan="2">PF</th>
+                <th rowspan="2">PF</th> -->
             </tr>
             <tr>
                 <th>10%</th>
@@ -180,27 +187,30 @@
                         $examenProm = number_format($examen * 0.3, 2);
 
                         $promedioGeneral = number_format($nota['promedio'] ?? 0, 2);
+
+                        $limite = $nota_minima;
+                        $claseColor = $promedioGeneral >= $limite ? 'promedio-alto' : 'promedio-bajo';
                     @endphp
                     <tr class="{{ $index % 2 === 0 ? 'fila-par' : 'fila-impar' }}">
                         <td>{{ $index + 1 }}</td>
-                        <td class="align-left">{{ $e['estudiante']['apellido'] }}, {{ $e['estudiante']['nombre'] }}</td>
-                        <td class="act1">{{ $nota['actividad1'] ?? '0' }}</td>
-                        <td class="act2">{{ $nota['actividad2'] ?? '0' }}</td>
-                        <td class="act3">{{ $nota['actividad3'] ?? '0' }}</td>
+                        <td colspan="6" class="align-left">{{ $e['estudiante']['apellido'] }}, {{ $e['estudiante']['nombre'] }}</td>
+                        <td class="act1">{{ $nota['actividad1'] ?? '0.00' }}</td>
+                        <td class="act2">{{ $nota['actividad2'] ?? '0.00' }}</td>
+                        <td class="act3">{{ $nota['actividad3'] ?? '0.00' }}</td>
                         <td class="prom"><strong>{{ $actividadProm }}</strong></td>
-                        <td>{{ $nota['actividadInt'] ?? '0' }}</td>
+                        <td>{{ $nota['actividadInt'] ?? '0.00' }}</td>
                         <td><strong>{{ $actividadIntProm }}</strong></td>
-                        <td>{{ $nota['examen'] ?? '0' }}</td>
+                        <td colspan="2">{{ $nota['examen'] ?? '0.00' }}</td>
                         <td><strong>{{ $examenProm }}</strong></td>
-                        <td><strong>{{ $nota['promedio'] ?? '0' }}</strong></td>
+                        <!-- <td><strong>{{ $nota['promedio'] ?? '0.00' }}</strong></td> -->
+                        <td><strong class="{{ $claseColor }}">{{ number_format($nota['promedio'] ?? '0.00', 2) }}</strong></td>
+                        <!-- <td></td>
                         <td></td>
-                        <td></td>
-                        <td></td>
+                        <td></td> -->
                     </tr>
                 @endforeach
             @endforeach
         </tbody>
-
     </table>
 </body>
 

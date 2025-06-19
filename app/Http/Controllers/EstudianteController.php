@@ -466,13 +466,13 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
             ],
             'notas' => $notasFiltradas->map(function ($nota) {
                 return [
-                    'id_nota' => $nota->id_nota,
-                    'actividad1' => $nota->actividad1,
-                    'actividad2' => $nota->actividad2,
-                    'actividad3' => $nota->actividad3,
-                    'actividadInt' => $nota->actividadInt,
-                    'examen' => $nota->examen,
-                    'promedio' => $nota->promedio,
+                    'id_nota' => $nota->id_nota ?? null,
+                    'actividad1' => number_format($nota->actividad1 ?? 0, 2, '.', ''),
+                    'actividad2' => number_format($nota->actividad2 ?? 0, 2, '.', ''),
+                    'actividad3' => number_format($nota->actividad3 ?? 0, 2, '.', ''),
+                    'actividadInt' => number_format($nota->actividadInt ?? 0, 2, '.', ''),
+                    'examen' => number_format($nota->examen ?? 0, 2, '.', ''),
+                    'promedio' => number_format($nota->promedio ?? 0, 2, '.', ''),
                     'periodo' => $nota->periodo ? [
                         'id_periodo' => $nota->periodo->id_periodo,
                         'periodo' => $nota->periodo->periodo,

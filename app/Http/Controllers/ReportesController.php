@@ -235,7 +235,8 @@ class ReportesController extends Controller
             'estudiantes' => $estudiantes,
             'institucion' => 'Complejo Educativo Col. Rosa Linda',
             'anio' => Carbon::now()->year,
-            'periodo' => $nombrePeriodo
+            'periodo' => $nombrePeriodo,
+            'nota_minima' => 7
         ];
 
         $pdf = Pdf::loadView('reportes.reporteNotas', $data);
