@@ -7,13 +7,14 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 10px;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 2px;
         }
 
         th, td {
@@ -107,18 +108,33 @@
         .fila-impar {
             background-color:rgb(255, 255, 255);
         }
-.promedio-alto {
-        color: green;
-    }
 
-    .promedio-bajo {
-        color: red;
-    }
+        .promedio-alto {
+            color: green;
+        }
+
+        .promedio-bajo {
+            color: red;
+        }
+
+        .nombre-reporte {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
 
     </style>
 </head>
 <body>
-    <div class="title">Reporte de Notas</div>
+    <div style="position: relative; margin-bottom: 5px; height: 65px;">
+        <img src="images/logo.jpg" alt="Logo" style="height: 65px; position: absolute; left: 0; top: 0;">
+        <div class="nombre-reporte">Reporte de Notas</div>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -212,6 +228,7 @@
             @endforeach
         </tbody>
     </table>
+    <p style="margin-top: 20px; font-weight: bold;">ACTIVIDADES</p>
 </body>
 
 
