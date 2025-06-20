@@ -10,15 +10,17 @@ class AgentAIController extends Controller
     public function consulta(Request $request)
     {
         // Validación
-        $inputText = $request->input('inputText');
+        $inputText = $request->input('input_text');
+        $sessionId = $request->input('session_id');
 
-        if (!$inputText) {
-            return response()->json(['error' => 'inputText es obligatorio'], 400);
+        if (!$inputText || !$sessionId) {
+            return response()->json(['error' => 'los campos de input_text y session_id son obligatorios'], 400);
         }
 
         try {
             $response = Http::post('https://n8n-production-1b6f.up.railway.app/webhook/infoquery', [
-                'inputText' => $inputText
+                'input_text' => $inputText,
+                'session_id' => $sessionId
             ]);
 
             if ($response->successful()) {
