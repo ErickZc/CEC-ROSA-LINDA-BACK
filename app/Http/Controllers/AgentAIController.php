@@ -41,7 +41,7 @@ class AgentAIController extends Controller
     public function importarDocumentos(Request $request)
     {
         // Validación
-        $tipo = $request->input('tipo');
+        $filename = $request->input('filename');
         $document = $request->input('document');
 
         if (!$document) {
@@ -50,7 +50,7 @@ class AgentAIController extends Controller
 
         try {
             $response = Http::post('https://n8n-production-1b6f.up.railway.app/webhook/uploaddocsrag', [
-                'tipo' => $tipo,
+                'filename' => $filename,
                 'document' => $document,
             ]);
 
