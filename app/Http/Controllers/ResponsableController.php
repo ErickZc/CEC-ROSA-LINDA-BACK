@@ -24,16 +24,16 @@ class ResponsableController extends Controller
         $responsables = Responsable::with([
             'persona.usuario'
         ])
-        ->where('estado', 'ACTIVO')
-        ->whereHas('persona', function ($query) use ($search) {
-            $query->where('nombre', 'like', "%{$search}%")
-                ->orWhere('apellido', 'like', "%{$search}%")
-                ->orWhereHas('usuario', function ($q) use ($search) {
-                    $q->where('usuario', 'like', "%{$search}%")
-                    ->orWhere('correo', 'like', "%{$search}%");
-                });
-        })
-        ->paginate(10);
+            ->where('estado', 'ACTIVO')
+            ->whereHas('persona', function ($query) use ($search) {
+                $query->where('nombre', 'like', "%{$search}%")
+                    ->orWhere('apellido', 'like', "%{$search}%")
+                    ->orWhereHas('usuario', function ($q) use ($search) {
+                        $q->where('usuario', 'like', "%{$search}%")
+                            ->orWhere('correo', 'like', "%{$search}%");
+                    });
+            })
+            ->paginate(10);
 
         return response()->json($responsables);
     }
@@ -48,7 +48,7 @@ class ResponsableController extends Controller
             'telefono'  => 'nullable|string|max:15',
             'genero'    => 'required|in:MASCULINO,FEMENINO,OTRO',
         ];
-        
+
         // Usuario general
         $rules['usuario'] = 'required|string|unique:Usuario,usuario';
         $rules['correo'] = 'required|email|unique:Usuario,correo';
@@ -65,8 +65,8 @@ class ResponsableController extends Controller
             $persona = Persona::create([
                 'nombre'    => $validated['nombre'],
                 'apellido'  => $validated['apellido'],
-                'direccion' => $validated['direccion'] ?? null, 
-                'telefono'  => $validated['telefono'] ?? null, 
+                'direccion' => $validated['direccion'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
                 'genero'    => $validated['genero'],
             ]);
 
@@ -83,7 +83,7 @@ class ResponsableController extends Controller
                 'password'  => Hash::make($validated['password']),
                 'correo'    => $validated['correo'],
                 'id_rol'    => $validated['id_rol'],
-                'id_persona'=> $persona->id_persona,
+                'id_persona' => $persona->id_persona,
                 'estado'    => 'ACTIVO',
             ]);
 
@@ -93,7 +93,6 @@ class ResponsableController extends Controller
                 'message' => 'Usuario creado correctamente',
                 'data' => $usuario
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -112,7 +111,7 @@ class ResponsableController extends Controller
             'direccion' => 'nullable|string|max:100',
             'telefono'  => 'nullable|string|max:15',
             'genero'    => 'required|in:MASCULINO,FEMENINO,OTRO',
-            
+
             'password'  => 'nullable|string|min:8',
 
         ]);
@@ -145,7 +144,6 @@ class ResponsableController extends Controller
                 'responsable' => $responsables
             ]
         ]);
-
     }
 
     public function destroy($id)
@@ -167,4 +165,6 @@ class ResponsableController extends Controller
 
         return response()->json(['message' => 'Encargado eliminado correctamente']);
     }
+
+
 }

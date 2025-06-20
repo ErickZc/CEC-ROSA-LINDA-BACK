@@ -27,6 +27,7 @@ use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
+use App\Http\Controllers\AgentAIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -166,6 +167,12 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     //generar boletas
-    Route::get('/reportes_boletaFinal/{id_estudiante}', [ReportesController::class, 'generarBoletaXestudiante']);
+    Route::get('/reportes_boletaFinal/{id_estudiante}/{anio}', [ReportesController::class, 'generarBoletaXestudiante']);
+    Route::get('/reportes_boletaGrado/{id_grado}/{anio}', [ReportesController::class, 'generarBoletasXGrado']);
+    Route::get('/boletas/grado/{id_grado}', [ReportesController::class, 'mostrarBoletaNotas']);
     Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
+
+    //Agente para responsable
+    Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
+    Route::post('/agentai/importacion', [AgentAIController::class, 'importarDocumentos']);
 });
