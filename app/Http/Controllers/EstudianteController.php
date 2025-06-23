@@ -45,6 +45,120 @@ class EstudianteController extends Controller
         return response()->json($estudiantes);
     }
 
+    public function estudiantesByNIE(Request $request)
+    {
+        $nie = $request->nie;
+
+        if (!$nie) {
+            return response()->json(['error' => 'El codigo del estudiaante es obligatorio'], 400);
+        }
+
+        $anioActual = date('Y');
+
+        $estudiantes = DB::table('Estudiante')
+            ->join('Historial_Estudiante', 'Estudiante.id_estudiante', '=', 'Historial_Estudiante.id_estudiante')
+            ->join('Grado', 'Historial_Estudiante.id_grado', '=', 'Grado.id_grado')
+            ->join('Seccion', 'Seccion.id_seccion', '=', 'Grado.id_seccion')
+            ->join('Persona', 'Estudiante.id_persona', '=', 'Persona.id_persona')
+            ->select(
+                'Estudiante.*',
+                'Persona.nombre',
+                'Persona.apellido',
+                'Persona.direccion',
+                'Persona.genero',
+                'Historial_Estudiante.anio',
+                'Historial_Estudiante.estado',
+                'Grado.grado as nombre_grado',
+                'Grado.turno',
+                'Grado.id_grado',
+                'Seccion.seccion as nombre_seccion'
+            )
+            ->where('Estudiante.estado', 'ACTIVO')
+            ->where('Estudiante.nie', $nie)
+            ->where('Historial_Estudiante.anio', $anioActual)
+            ->get();
+
+
+        if ($estudiantes->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron estudiantes con el NIE ' . $nie], 404);
+        }
+
+        return response()->json($estudiantes);
+    }
+
+    public function rendimientoEstudiantil(Request $request)
+    {
+        $nie = $request->nie;
+        $periodo = $request->id_periodo;
+
+        if (!$nie || !$periodo) {
+            return response()->json(['error' => 'El NIE y el periodo son obligatorios'], 400);
+        }
+
+        $anioActual = date('Y');
+
+        $resultados = DB::select("
+            WITH notas_anteriores AS (
+                SELECT 
+                    id_materia,
+                    id_historial,
+                    promedio,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY id_materia, id_historial 
+                        ORDER BY id_periodo DESC
+                    ) AS rn
+                FROM Nota
+                WHERE id_periodo < $periodo
+            )
+            SELECT 
+                m.nombre_materia,
+                n.promedio,
+                COALESCE(n.examen, n.actividadInt, n.actividad3, n.actividad2, n.actividad1) AS ultima_nota,
+                CASE 
+                    WHEN n.actividad1 IS NULL OR n.actividad2 IS NULL OR n.actividad3 IS NULL 
+                        OR n.actividadInt IS NULL OR n.examen IS NULL THEN 'En progreso'
+
+                    WHEN g.grado LIKE '%Bachillerato%' AND n.promedio >= 6 THEN 'Aprobado'
+                    WHEN g.grado NOT LIKE '%Bachillerato%' AND n.promedio >= 5 THEN 'Aprobado'
+                    ELSE 'Reprobado'
+                END AS estado,
+                CASE 
+                    WHEN na.promedio IS NULL THEN 
+                        CASE 
+                            WHEN n.promedio IS NULL THEN 'Sin datos anteriores'
+                            WHEN n.promedio < 5 THEN 'El estudiante necesita mejorar en clases'
+                            WHEN n.promedio < 8 THEN 'El rendimiento actual del estudiante es aceptable'
+                            WHEN n.promedio >= 8 THEN 'El estudiante muestra un excelente rendimiento'
+                            ELSE 'Faltan datos para determinar el rendimiento'
+                        END
+                    WHEN n.promedio < 5 THEN 'El estudiante tiene alta probabilidad de dejar la materia'
+                    WHEN n.promedio >= 5 AND n.promedio <= 6 THEN 'El estudiante se encuentra al limite de aprobar o reprobar'
+                    WHEN n.promedio <= na.promedio - 2 THEN 'Descenso grave respecto al ciclo anterior'
+                    WHEN n.promedio - na.promedio > 0.5 THEN 'El estudiante ha mejorado su promedio, felicidades'
+                    WHEN na.promedio - n.promedio > 0.5 THEN 'El estudiante ha bajado su rendimiento en la materia'
+                    ELSE 'El estudiante sigue con la tendencia del ciclo anterior'
+                END AS tendencia
+            FROM Nota n
+            INNER JOIN Materia m ON n.id_materia = m.id_materia
+            INNER JOIN Historial_Estudiante he ON he.id_historial = n.id_historial
+            INNER JOIN Estudiante e ON e.id_estudiante = he.id_estudiante
+            INNER JOIN Grado g ON g.id_grado = he.id_grado
+            LEFT JOIN notas_anteriores na 
+                ON na.id_materia = n.id_materia 
+                AND na.id_historial = n.id_historial 
+                AND na.rn = 1
+            WHERE n.id_periodo = $periodo
+            AND e.nie = :nie
+            AND he.anio = :anio
+        ", [
+            'nie' => $nie,
+            //'periodo' => $periodo,
+            'anio' => $anioActual
+        ]);
+
+        return response()->json($resultados);
+    }
+
 
     public function estudiantesByResponsable(Request $request)
     {

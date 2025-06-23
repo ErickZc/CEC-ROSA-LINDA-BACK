@@ -67,6 +67,8 @@ Route::post('/refresh', [AuthController::class, 'refresh']);
     return response()->json($user);
 });*/
 
+
+
 // Middleware con llave privada para consumo de API
 Route::middleware(['auth:api', 'api.key'])->group(function () {
     
@@ -154,4 +156,12 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     //inhabilitar token al cerrar sesion
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Rutas para el registro de rendimiento académico
+    Route::get('/admin/buscarEstudianteByNIE', [EstudianteController::class, 'estudiantesByNIE']);
+    Route::get('/admin/mostrarPeriodos', [PeriodoController::class, 'index']);
+    Route::get('/admin/rendimientoEstudiantil', [EstudianteController::class, 'rendimientoEstudiantil']);
+
+
 });
+
