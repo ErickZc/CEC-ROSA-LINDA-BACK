@@ -110,7 +110,114 @@ class EstudianteController extends Controller
         ]);
     }
 
-    public function seccionesPorUsuario($idRol, $idPersona)
+    // public function seccionesPorUsuario($idRol, $idPersona)
+    // {
+    //     if (!in_array($idRol, [1, 2])) {
+    //         return response()->json(['error' => 'No autorizado. Rol no permitido.'], 403);
+    //     }
+
+    //     // =================== ADMINISTRADOR ===================
+    //     if ($idRol == 1) {
+    //         $asignaciones = DocenteMateriaGrado::with(['materia', 'grado.seccion'])->get();
+
+    //         if ($asignaciones->isEmpty()) {
+    //             return response()->json([
+    //                 'rol' => 'ADMINISTRADOR',
+    //                 'message' => 'No hay asignaciones registradas en el sistema.',
+    //                 'total_secciones' => 0,
+    //                 'secciones' => [],
+    //                 'grados' => [],
+    //                 'materias' => []
+    //             ], 200);
+    //         }
+
+    //         $secciones = collect();
+    //         $grados = collect();
+    //         $materias = collect();
+
+    //         foreach ($asignaciones as $asignacion) {
+    //             $grado = $asignacion->grado;
+    //             $seccion = $grado->seccion;
+    //             $materia = $asignacion->materia;
+
+    //             $secciones->push($seccion);
+    //             $grados->push([
+    //                 'id_grado' => $grado->id_grado,
+    //                 'grado' => $grado->grado,
+    //                 'id_seccion' => $grado->id_seccion,
+    //                 'seccion' => $seccion->seccion,
+    //                 'grado_seccion' => $grado->grado . ' ' . $seccion->seccion
+    //             ]);
+    //             $materias->push([
+    //                 'id_materia' => $materia->id_materia,
+    //                 'nombre_materia' => $materia->nombre_materia
+    //             ]);
+    //         }
+
+    //         return response()->json([
+    //             'rol' => 'ADMINISTRADOR',
+    //             'total_secciones' => $secciones->unique('id_seccion')->count(),
+    //             'secciones' => $secciones->unique('id_seccion')->values(),
+    //             'grados' => $grados->unique('id_grado')->sortBy('grado')->values(),
+    //             'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
+    //         ]);
+    //     }
+
+    //     // =================== DOCENTE ===================
+    //     $docente = Docente::where('id_persona', $idPersona)->first();
+    //     if (!$docente) {
+    //         return response()->json(['error' => 'El usuario no está registrado como docente.'], 404);
+    //     }
+
+    //     // Obtener asignaciones del docente
+    //     $asignaciones = DocenteMateriaGrado::where('id_docente', $docente->id_docente)
+    //         ->with(['materia', 'grado.seccion'])
+    //         ->get();
+
+    //     if ($asignaciones->isEmpty()) {
+    //         return response()->json([
+    //             'rol' => 'DOCENTE',
+    //             'message' => 'El docente no tiene asignaciones registradas.',
+    //             'total_secciones' => 0,
+    //             'secciones' => [],
+    //             'grados' => [],
+    //             'materias' => []
+    //         ], 200);
+    //     }
+
+    //     $secciones = collect();
+    //     $grados = collect();
+    //     $materias = collect();
+
+    //     foreach ($asignaciones as $asignacion) {
+    //         $grado = $asignacion->grado;
+    //         $seccion = $grado->seccion;
+    //         $materia = $asignacion->materia;
+
+    //         $secciones->push($seccion);
+    //         $grados->push([
+    //             'id_grado' => $grado->id_grado,
+    //             'grado' => $grado->grado,
+    //             'id_seccion' => $grado->id_seccion,
+    //             'seccion' => $seccion->seccion,
+    //             'grado_seccion' => $grado->grado . ' ' . $seccion->seccion
+    //         ]);
+    //         $materias->push([
+    //             'id_materia' => $materia->id_materia,
+    //             'nombre_materia' => $materia->nombre_materia
+    //         ]);
+    //     }
+
+    //     return response()->json([
+    //         'rol' => 'DOCENTE',
+    //         'total_secciones' => $secciones->unique('id_seccion')->count(),
+    //         'secciones' => $secciones->unique('id_seccion')->values(),
+    //         'grados' => $grados->unique('id_grado')->sortBy('grado')->values(),
+    //         'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
+    //     ]);
+    // }
+
+    public function getSecciones($idRol, $idPersona, $turno)
     {
         if (!in_array($idRol, [1, 2])) {
             return response()->json(['error' => 'No autorizado. Rol no permitido.'], 403);
@@ -140,25 +247,30 @@ class EstudianteController extends Controller
                 $seccion = $grado->seccion;
                 $materia = $asignacion->materia;
 
-                $secciones->push($seccion);
-                $grados->push([
-                    'id_grado' => $grado->id_grado,
-                    'grado' => $grado->grado,
-                    'id_seccion' => $grado->id_seccion,
-                    'seccion' => $seccion->seccion,
-                    'grado_seccion' => $grado->grado . ' ' . $seccion->seccion
-                ]);
-                $materias->push([
-                    'id_materia' => $materia->id_materia,
-                    'nombre_materia' => $materia->nombre_materia
-                ]);
+                if ($grado->turno === $turno) {
+                    $secciones->push($seccion);
+
+                    $grados->push([
+                        'id_grado' => $grado->id_grado,
+                        'grado' => $grado->grado,
+                        'id_seccion' => $grado->id_seccion,
+                        'seccion' => $seccion->seccion,
+                        'grado_seccion' => $grado->grado . ' ' . $seccion->seccion,
+                        'turno' => $grado->turno
+                    ]);
+
+                    $materias->push([
+                        'id_materia' => $materia->id_materia,
+                        'nombre_materia' => $materia->nombre_materia
+                    ]);
+                }
             }
 
             return response()->json([
                 'rol' => 'ADMINISTRADOR',
                 'total_secciones' => $secciones->unique('id_seccion')->count(),
                 'secciones' => $secciones->unique('id_seccion')->values(),
-                'grados' => $grados->unique('id_grado')->sortBy('grado')->values(),
+                'grados' => $grados->unique(fn ($item) => $item['id_grado'])->sortBy('grado')->values(),
                 'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
             ]);
         }
@@ -169,7 +281,6 @@ class EstudianteController extends Controller
             return response()->json(['error' => 'El usuario no está registrado como docente.'], 404);
         }
 
-        // Obtener asignaciones del docente
         $asignaciones = DocenteMateriaGrado::where('id_docente', $docente->id_docente)
             ->with(['materia', 'grado.seccion'])
             ->get();
@@ -194,29 +305,33 @@ class EstudianteController extends Controller
             $seccion = $grado->seccion;
             $materia = $asignacion->materia;
 
-            $secciones->push($seccion);
-            $grados->push([
-                'id_grado' => $grado->id_grado,
-                'grado' => $grado->grado,
-                'id_seccion' => $grado->id_seccion,
-                'seccion' => $seccion->seccion,
-                'grado_seccion' => $grado->grado . ' ' . $seccion->seccion
-            ]);
-            $materias->push([
-                'id_materia' => $materia->id_materia,
-                'nombre_materia' => $materia->nombre_materia
-            ]);
+            if ($grado->turno === $turno) {
+                $secciones->push($seccion);
+
+                $grados->push([
+                    'id_grado' => $grado->id_grado,
+                    'grado' => $grado->grado,
+                    'id_seccion' => $grado->id_seccion,
+                    'seccion' => $seccion->seccion,
+                    'grado_seccion' => $grado->grado . ' ' . $seccion->seccion,
+                    'turno' => $grado->turno
+                ]);
+
+                $materias->push([
+                    'id_materia' => $materia->id_materia,
+                    'nombre_materia' => $materia->nombre_materia
+                ]);
+            }
         }
 
         return response()->json([
             'rol' => 'DOCENTE',
             'total_secciones' => $secciones->unique('id_seccion')->count(),
             'secciones' => $secciones->unique('id_seccion')->values(),
-            'grados' => $grados->unique('id_grado')->sortBy('grado')->values(),
+            'grados' => $grados->unique(fn ($item) => $item['id_grado'])->sortBy('grado')->values(),
             'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
         ]);
     }
-
 
     public function contarEstudiantesPorSeccion($id_grado)
     {
