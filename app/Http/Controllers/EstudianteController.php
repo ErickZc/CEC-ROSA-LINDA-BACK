@@ -447,6 +447,46 @@ class EstudianteController extends Controller
         ]);
     }
 
+    public function getGradoSeccionesMaterias($turno, $grado, $seccion)
+    {
+        // Obtener asignaciones con relaciones
+        $asignaciones = DocenteMateriaGrado::with(['materia', 'grado.seccion'])->get();
+
+        if ($asignaciones->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay asignaciones registradas.',
+                'total' => 0,
+                'materias' => []
+            ]);
+        }
+
+        // Filtrar materias según turno, grado y sección
+        $materias = collect();
+
+        foreach ($asignaciones as $asignacion) {
+            $gradoObj = $asignacion->grado;
+            $seccionObj = $gradoObj->seccion;
+
+            if (
+                $gradoObj->turno === $turno &&
+                $gradoObj->grado === $grado &&
+                $seccionObj->seccion === $seccion
+            ) {
+                $materia = $asignacion->materia;
+                $materias->push([
+                    'id_materia' => $materia->id_materia,
+                    'nombre_materia' => $materia->nombre_materia
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Consulta realizada correctamente.',
+            'total' => $materias->count(),
+            'materias' => $materias->sortBy('nombre_materia')->values()
+        ]);
+    }
+
     public function contarEstudiantesPorSeccion($id_grado)
     {
         $grado = Grado::with('seccion')->where('id_grado', $id_grado)->first();
