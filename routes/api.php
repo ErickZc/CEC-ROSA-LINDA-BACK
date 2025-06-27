@@ -47,6 +47,7 @@ Route::get('/test', function () {
 });
     // Ruta para validar existencia de un correo
 Route::post('/validarCorreo', [AuthController::class, 'validarCorreo']);
+Route::post('/validarCorreoCoordinador', [AuthController::class, 'validarCorreoCoordinador']);
 // Ruta para validar credenciales
 Route::post('/actualizar-credenciales', [AuthController::class, 'actualizarCredenciales']);
 // Ruta para validar token OTP
@@ -140,10 +141,12 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::post('/admin/AsignarMateriaDocenteCiclo2', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo2']);
     Route::post('/admin/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
     Route::post('/admin/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
+
     // Rutas para permisos
     Route::resource('/permisos', PermisosController::class)->except(['show']);
     Route::post('/permisos/permisosPorResponsable', [PermisosController::class, 'getPermisosByResponsable']);
     Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
+    Route::post('/permisos/permisosPorCoordinador', [PermisosController::class, 'getPermisosByCoordinador']);
     Route::post('/estudiantes/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesByResponsable']);
     
     // Rutas para la gestión de notas
@@ -182,4 +185,22 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
     Route::post('/agentai/importacion', [AgentAIController::class, 'importarDocumentos']);
+
+
+    // DASHBOARD COORDINADOR
+        //asignarMaterias.vue
+        Route::get('/coordinador/showGradosTurnoCiclo1', [GradoController::class, 'showGradoXturnoCiclo1']);
+        Route::get('/coordinador/showGradosTurnoCiclo2', [GradoController::class, 'showGradoXturnoCiclo2']);
+        Route::get('/coordinador/showGradosTurnoCiclo3', [GradoController::class, 'showGradoXturnoCiclo3']);
+        Route::get('/coordinador/showGradosTurnoCiclo4', [GradoController::class, 'showGradoXturnoCiclo4']);
+        Route::get('/coordinador/busquedaDocente', [DocenteMateriaGradoController::class, 'busquedaDocente']);
+        Route::get('/coordinador/mostrarMateriaxCiclo', [MateriaController::class, 'mostrarMateriaXCiclo']);
+		Route::get('/coordinador/obtenerMateriasConDocentesPorGrado', [DocenteMateriaGradoController::class, 'obtenerMateriasConDocentesPorGrado']);
+		Route::post('/coordinador/desvincularDocenteMateriaGrado', [DocenteMateriaGradoController::class, 'desvincularDocenteMateriaGrado']);
+        Route::post('/coordinador/AsignarMateriaDocenteCiclo1', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo1']);
+        Route::post('/coordinador/AsignarMateriaDocenteCiclo2', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo2']);
+        Route::post('/coordinador/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
+        Route::post('/coordinador/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
 });
+
+
