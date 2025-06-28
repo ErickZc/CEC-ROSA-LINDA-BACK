@@ -62,6 +62,7 @@ class PermisosController extends Controller
             'historialestudiante.estudiante.persona',
             'historialestudiante.estudiante.responsableEstudiantes.responsable.persona',
             'historialestudiante.grado',
+            'historialestudiante.grado.seccion',
         ])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
@@ -76,6 +77,31 @@ class PermisosController extends Controller
             ->when(!empty($grados), function ($query) use ($grados) {
                 $query->whereHas('historialestudiante.grado', function ($q) use ($grados) {
                     $q->whereIn('id_grado', $grados);
+                });
+            })
+            ->paginate(10);
+
+        return response()->json($permisos);
+    }
+
+    public function getPermisosByCoordinador(Request $request)
+    {
+        $search = $request->input('search', '');
+
+        $permisos = Permisos::with([
+            'historialestudiante.estudiante.persona',
+            'historialestudiante.estudiante.responsableEstudiantes.responsable.persona',
+            'historialestudiante.grado',
+            'historialestudiante.grado.seccion',
+        ])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('historialestudiante.estudiante.persona', function ($q2) use ($search) {
+                        $q2->where('nombre', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q3) use ($search) {
+                        $q3->where('nombre', 'like', "%{$search}%");
+                    });
                 });
             })
             ->paginate(10);
