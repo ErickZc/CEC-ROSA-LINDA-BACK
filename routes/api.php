@@ -183,4 +183,10 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
     Route::post('/agentai/importacion', [AgentAIController::class, 'importarDocumentos']);
+
+    //obtener notas para los reponsables de los estudiantes 
+    Route::get('/notas/responsable', [NotaController::class, 'mostrarNotasPorResponsable']);
+    Route::get('/grados/responsable', [NotaController::class, 'obtenerGradosPorResponsable']);
+    Route::get('/responsables/por_nie', [ResponsableController::class, 'obtenerResponsablesPorNIE']);
+
 });

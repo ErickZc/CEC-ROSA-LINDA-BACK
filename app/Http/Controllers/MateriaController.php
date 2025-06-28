@@ -22,8 +22,9 @@ class MateriaController extends Controller
         $search = $request->input('search', '');
 
         // Filtrar los usuarios según el parámetro de búsqueda
-        $materias = Materia::where('nombre_materia', 'like', "%{$search}%")
-                            ->paginate(10);
+        $materias = Materia::with('ciclo')
+            ->where('nombre_materia', 'like', "%{$search}%")
+            ->paginate(10);
 
         // Devolver los usuarios paginados
         return response()->json($materias);
