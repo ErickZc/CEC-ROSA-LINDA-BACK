@@ -116,6 +116,32 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function validarCorreoCoordinador(Request $request)
+    {
+        $correo = $request->input('correo');
+        $usuario = Usuario::where('correo', $correo)
+            ->where('id_rol', '!=', 1) // 1 = ADMINISTRADOR
+            ->select('id_usuario', 'estado')
+            ->first();
+    
+        if (!$usuario) {
+            return response()->json([
+                'message' => 'El correo no ha sido encontrado'
+            ], 404);
+        }
+    
+        if ($usuario->estado !== 'ACTIVO') {
+            return response()->json([
+                'message' => 'El correo no está activo'
+            ], 403); // 403 Forbidden
+        }
+       
+        return response()->json([
+            'message' => 'El usuario a sido encontrado',
+            'usuario' => $usuario
+        ], 200);
+    }
+
     public function actualizarCredenciales(Request $request)
     {
         $request->validate([

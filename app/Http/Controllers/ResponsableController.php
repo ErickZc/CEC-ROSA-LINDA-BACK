@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Persona;
 use App\Models\Usuario;
+use App\Models\Estudiante;
 use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\HistorialEstudiante;
 use Illuminate\Support\Facades\Hash;
+use App\Models\ResponsableEstudiante;
 use Illuminate\Support\Facades\Validator;
 
 class ResponsableController extends Controller
@@ -164,6 +167,68 @@ class ResponsableController extends Controller
         }
 
         return response()->json(['message' => 'Encargado eliminado correctamente']);
+    }
+
+
+    public function obtenerResponsablesPorNIE(Request $request)
+    {
+        $nie = $request->input('nie');
+
+        if (!$nie) {
+            return response()->json(['message' => 'Debe proporcionar el NIE del estudiante'], 400);
+        }
+
+        // Buscar al estudiante
+        $estudiante = Estudiante::with('persona')->where('nie', $nie)->first();
+
+        if (!$estudiante) {
+            return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        }
+
+        // Obtener correo del estudiante desde la tabla usuario
+        $usuario = Usuario::where('id_persona', $estudiante->id_persona)->first();
+
+        // Obtener historial más reciente
+        $historial = HistorialEstudiante::with('grado.seccion')
+            ->where('id_estudiante', $estudiante->id_estudiante)
+            ->latest('id_historial')
+            ->first();
+
+        // Obtener responsables
+        $responsables = ResponsableEstudiante::with(['responsable.persona'])
+            ->where('id_estudiante', $estudiante->id_estudiante)
+            ->where('estado', 'ACTIVO')
+            ->get()
+            ->map(function ($relacion) {
+                $correo = Usuario::where('id_persona', $relacion->responsable->persona->id_persona)->value('correo');
+
+                return [
+                    'id_responsable' => $relacion->id_responsable,
+                    'nombre' => $relacion->responsable->persona->nombre,
+                    'apellido' => $relacion->responsable->persona->apellido,
+                    'direccion' => $relacion->responsable->persona->direccion,
+                    'telefono' => $relacion->responsable->persona->telefono,
+                    'genero' => $relacion->responsable->persona->genero,
+                    'correo' => $correo,
+                    'parentesco' => $relacion->parentesco,
+                    'estado' => $relacion->estado,
+                ];
+            });
+
+        return response()->json([
+            'estudiante' => [
+                'nie' => $nie,
+                'nombre' => $estudiante->persona->nombre,
+                'apellido' => $estudiante->persona->apellido,
+                'direccion' => $estudiante->persona->direccion,
+                'genero' => $estudiante->persona->genero,
+                'correo' => $estudiante->correo,
+                'grado' => $historial?->grado?->grado,
+                'seccion' => $historial?->grado?->seccion?->seccion,
+                'estado' => $historial?->estado,
+            ],
+            'responsables' => $responsables,
+        ]);
     }
 
 

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Nota;
 use App\Models\Materia;
 use App\Models\Estudiante;
-use App\Models\HistorialEstudiante;
+use App\Models\Responsable;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
+use App\Models\HistorialEstudiante;
+use App\Models\ResponsableEstudiante;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class NotaController extends Controller
 {
@@ -188,4 +192,136 @@ class NotaController extends Controller
 
         return response()->json(['message' => 'Nota eliminada']);
     }
+
+    public function mostrarNotasPorResponsable(Request $request)
+    {
+        $id_grado = $request->input('id_grado');
+        $id_periodo = $request->input('id_periodo');
+        $anio = $request->input('anio', date('Y'));
+        $perPage = $request->input('per_page', 10);
+        $currentPage = $request->input('page', 1);
+        $id_persona = $request->input('id_persona');
+
+        if (!$id_persona) {
+            return response()->json(['message' => 'Debe proporcionar el ID de la persona responsable'], 400);
+        }
+
+        // Buscar al responsable
+        $responsable = Responsable::where('id_persona', $id_persona)->first();
+        if (!$responsable) {
+            return response()->json(['message' => 'No se encontró el responsable'], 404);
+        }
+
+        // Obtener estudiantes asignados a ese responsable
+        $relaciones = ResponsableEstudiante::where('id_responsable', $responsable->id_responsable)
+            ->where('estado', 'ACTIVO')
+            ->pluck('id_estudiante');
+
+        if ($relaciones->isEmpty()) {
+            return response()->json(['message' => 'No hay estudiantes asignados a este responsable'], 404);
+        }
+
+        $query = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
+            ->where('anio', $anio)
+            ->whereIn('id_estudiante', $relaciones);
+        
+            if($id_grado){
+                $query->where('id_grado', $id_grado);
+            }
+
+        $historiales = $query->get();
+
+        $boletas = [];
+
+        foreach ($historiales as $historial) {
+            $notas = $historial->notas()->with('materia.ciclo')->get()
+                ->groupBy(fn ($item) => $item->materia->nombre_materia ?? 'Sin nombre');
+
+            $primerNota = $notas->first()?->first();
+            $cicloNombre = $primerNota?->materia?->ciclo?->nombre ?? '';
+            $isBachillerato = Str::contains(strtolower($cicloNombre), 'bachillerato');
+
+            foreach ($notas as $materia => $registros) {
+                if($id_periodo){
+                    $registrosPeriodo = $registros->firstWhere('id_periodo', $id_periodo);
+                    if($registrosPeriodo){
+                        $boletas[] = [
+                            'id_estudiante' => $historial->estudiante->id_estudiante,
+                            'nie' => $historial->estudiante->nie,
+                            'nombre' => $historial->estudiante->persona->apellido . ', ' . $historial->estudiante->persona->nombre,
+                            'materia' => $materia,
+                            'actividad1' => $registrosPeriodo->actividad1,
+                            'actividad2' => $registrosPeriodo->actividad2,
+                            'actividad3' => $registrosPeriodo->actividad3,
+                            'actividadInt' => $registrosPeriodo->actividadInt,
+                            'examen' => $registrosPeriodo->examen,
+                            'promedio' => $registrosPeriodo->promedio,
+                        ];
+                    }
+                    continue;
+                }
+            }
+        }
+
+        // Paginación manual
+        $offset = ($currentPage - 1) * $perPage;
+        $itemsForPage = array_slice($boletas, $offset, $perPage);
+
+        $paginator = new LengthAwarePaginator(
+            $itemsForPage,
+            count($boletas),
+            $perPage,
+            $currentPage,
+            ['path' => url()->current(), 'query' => $request->query()]
+        );
+
+        return response()->json($paginator);
+    }
+
+    public function obtenerGradosPorResponsable(Request $request)
+    {
+        $id_persona = $request->input('id_persona');
+        $anio = $request->input('anio', date('Y'));
+
+        if (!$id_persona) {
+            return response()->json(['message' => 'Debe proporcionar el ID de la persona responsable'], 400);
+        }
+
+        $responsable = Responsable::where('id_persona', $id_persona)->first();
+        if (!$responsable) {
+            return response()->json(['message' => 'Responsable no encontrado'], 404);
+        }
+
+        // Obtener los estudiantes asignados
+        $idEstudiantes = ResponsableEstudiante::where('id_responsable', $responsable->id_responsable)
+            ->where('estado', 'ACTIVO')
+            ->pluck('id_estudiante');
+
+        if ($idEstudiantes->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Obtener los grados únicos de esos estudiantes en el año solicitado
+        $grados = HistorialEstudiante::with('grado.seccion')
+            ->whereIn('id_estudiante', $idEstudiantes)
+            ->where('anio', $anio)
+            ->get()
+            ->map(function ($historial) {
+                $nombreGrado = $historial->grado->grado;
+                $esBachillerato = str_contains(strtolower($nombreGrado), 'bachillerato');
+                return [
+                    'id_grado' => $historial->grado->id_grado,
+                    'grado' => $nombreGrado,
+                    'seccion' => $historial->grado->seccion->seccion,
+                    'turno' => $historial->grado->turno,
+                    'es_bachillerato' => $esBachillerato,
+                ];
+            })
+            ->unique('id_grado') // eliminar duplicados por grado
+            ->values();
+
+        return response()->json($grados);
+    }
+
+
 }
