@@ -176,6 +176,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/admin/buscarEstudianteByNIE', [EstudianteController::class, 'estudiantesByNIE']);
     Route::get('/admin/mostrarPeriodos', [PeriodoController::class, 'index']);
     Route::get('/admin/rendimientoEstudiantil', [EstudianteController::class, 'rendimientoEstudiantil']);
+     Route::get('/responsable/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesPorResponsable']);
+   
 
     //generar boletas
     Route::get('/reportes_boletaFinal/{id_estudiante}/{anio}', [ReportesController::class, 'generarBoletaXestudiante']);

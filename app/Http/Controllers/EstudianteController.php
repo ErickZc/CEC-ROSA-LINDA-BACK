@@ -52,6 +52,29 @@ class EstudianteController extends Controller
         return response()->json($estudiantes);
     }
 
+    public function estudiantesPorResponsable(Request $request)
+    {
+        $idPersona = $request->id_persona;
+
+        if (!$idPersona) {
+            return response()->json(['error' => 'El ID de la persona responsable es obligatorio'], 400);
+        }
+
+        $estudiantes = DB::table('Responsable')
+            ->join('Responsable_Estudiante', 'Responsable.id_responsable', '=', 'Responsable_Estudiante.id_responsable')
+            ->join('Estudiante', 'Estudiante.id_estudiante', '=', 'Responsable_Estudiante.id_estudiante')
+            ->join('Persona', 'Persona.id_persona', '=', 'Estudiante.id_persona')
+            ->select('Estudiante.id_estudiante','Estudiante.nie','Persona.nombre', 'Persona.apellido')
+            ->where('Responsable.id_persona', $idPersona)
+            ->get();
+
+        if ($estudiantes->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron estudiantes para el responsable con ID ' . $idPersona], 404);
+        }
+
+        return response()->json($estudiantes);
+    }
+
     public function estudiantesByNIE(Request $request)
     {
         $nie = $request->nie;
@@ -120,7 +143,22 @@ class EstudianteController extends Controller
             SELECT 
                 m.nombre_materia,
                 n.promedio,
-                COALESCE(n.examen, n.actividadInt, n.actividad3, n.actividad2, n.actividad1) AS ultima_nota,
+                CASE
+                    WHEN n.actividad1 > 0 THEN n.actividad1
+                    WHEN n.actividad2 > 0 THEN n.actividad2
+                    WHEN n.actividad3 > 0 THEN n.actividad3
+                    WHEN n.actividadInt > 0 THEN n.actividadInt
+                    WHEN n.examen > 0 THEN n.examen
+                    ELSE NULL
+                    END AS ultima_nota,
+                CONCAT(
+                    (CASE WHEN n.actividad1 > 0 THEN 1 ELSE 0 END) +
+                    (CASE WHEN n.actividad2 > 0 THEN 1 ELSE 0 END) +
+                    (CASE WHEN n.actividad3 > 0 THEN 1 ELSE 0 END) +
+                    (CASE WHEN n.actividadInt > 0 THEN 1 ELSE 0 END) +
+                    (CASE WHEN n.examen > 0 THEN 1 ELSE 0 END),
+                    ' de 5'
+                    ) AS notas_ingresadas,
                 CASE 
                     WHEN n.actividad1 IS NULL OR n.actividad2 IS NULL OR n.actividad3 IS NULL 
                         OR n.actividadInt IS NULL OR n.examen IS NULL THEN 'En progreso'
