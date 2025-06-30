@@ -158,6 +158,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     // Route::get('/estudiantes/seccion/{idSeccion}/rol/{idRol}', [EstudianteController::class, 'filterDataSecciones']);
     // Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
     Route::get('/estudiantes/secciones/{idRol}/{idPersona}/{turno}', [EstudianteController::class, 'getSecciones']);
+    Route::get('/estudiantes/materiasGrado/{turno}/{grado}/{seccion}', [EstudianteController::class, 'getGradoSeccionesMaterias']);
     // Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
@@ -184,6 +185,9 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/reportes_boletaGrado/{id_grado}/{anio}', [ReportesController::class, 'generarBoletasXGrado']);
     Route::get('/boletas/grado/{id_grado}', [ReportesController::class, 'mostrarBoletaNotas']);
     Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
+    Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGradoSeccion']);
+    Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
+    Route::get('/reportes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'generarListadoEstudiantesPorGradoSeccion']);
 
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
