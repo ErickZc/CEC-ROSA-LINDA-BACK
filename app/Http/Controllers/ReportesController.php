@@ -457,4 +457,75 @@ class ReportesController extends Controller
     }
 
 
+    public function getEstudiantesPorGradoSeccion($id_grado, $seccion)
+    {
+        $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
+            ->where('id_grado', $id_grado)
+            ->whereHas('grado.seccion', function($query) use ($seccion) {
+                $query->where('seccion', $seccion);
+            })
+            ->get();
+
+        $result = $estudiantes->map(function($historial) {
+            return [
+                'id_estudiante' => $historial->estudiante->id_estudiante,
+                'nie' => $historial->estudiante->nie,
+                'nombre' => $historial->estudiante->persona->nombre,
+                'apellido' => $historial->estudiante->persona->apellido,
+                'estado' => $historial->estado,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Consulta realizada correctamente.',
+            'total' => $result->count(),
+            'estudiantes' => $result
+        ]);
+    }
+
+public function generarListadoEstudiantesPorGradoSeccion($id_grado, $seccion)
+{
+    if (!$id_grado || !$seccion) {
+        return abort(400, 'Debe proporcionar un grado y una sección.');
+    }
+
+    $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
+        ->where('id_grado', $id_grado)
+        ->whereHas('grado.seccion', function($query) use ($seccion) {
+            $query->where('seccion', $seccion);
+        })
+        ->get();
+
+    if ($estudiantes->isEmpty()) {
+        return abort(404, 'No se encontraron estudiantes para ese grado y sección.');
+    }
+
+    $listado = $estudiantes->map(function ($historial) {
+        return [
+            'nie' => $historial->estudiante->nie,
+            'nombre' => $historial->estudiante->persona->nombre,
+            'apellido' => $historial->estudiante->persona->apellido,
+            'estado' => $historial->estado,
+        ];
+    });
+
+    // Cargar logo (opcional)
+    $path = public_path('images/logo.jpg');
+    $type = pathinfo($path, PATHINFO_EXTENSION);
+    $data = file_get_contents($path);
+    $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+    // Generar PDF con vista
+    return Pdf::loadView('reportes.listado_estudiantes', [
+        'estudiantes' => $listado,
+        'grado' => $estudiantes->first()->grado,
+        'seccion' => $seccion,
+        'logoBase64' => $logoBase64,
+        'fecha' => Carbon::now()->format('d/m/Y'),
+    ])->stream('listado_estudiantes_grado_' . $id_grado . '_seccion_' . $seccion . '.pdf');
+}
+
+
+
+
 }
