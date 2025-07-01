@@ -95,6 +95,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
     Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
+    Route::get('/allinasistencias', [InasistenciaController::class, 'getAllInasistenciasReport']);
+    Route::get('/allinasistencias/export', [InasistenciaController::class, 'getAllInasistenciasReportExport']);
     Route::get('/reporte-inasistencias-count', [InasistenciaController::class, 'getInasistenciaCount']);
     Route::get('/reporte-inasistencias-days', [InasistenciaController::class, 'getInasistenciaByDays']);
     Route::get('/gradosList', [GradoController::class, 'gradosList']);
