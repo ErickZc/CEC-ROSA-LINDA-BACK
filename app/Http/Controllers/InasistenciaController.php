@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Inasistencia;
 use App\Models\HistorialEstudiante;
 use Carbon\Carbon;
+use App\Models\DocenteMateriaGrado;
 
 class InasistenciaController extends Controller
 {
@@ -64,7 +65,7 @@ class InasistenciaController extends Controller
         //
     }
 
-    public function getInasistenciaReport(Request $request)
+    public function getInasistenciaReportByGrado(Request $request)
     {
         // Obtener el parámetro de búsqueda, si existe
         $grado = $request->input('grado'); //obligatorio
@@ -105,6 +106,255 @@ class InasistenciaController extends Controller
             ->paginate(10);
 
         // Devolver los usuarios paginados
+        return response()->json($inasistencias);
+    }
+
+    public function getInasistenciasByDocente(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+        $docente = $request->input('docente');
+
+        $grados = DocenteMateriaGrado::with([
+            'docente.persona',
+            'grado'
+        ])
+            ->when($docente, function ($query) use ($docente) {
+                $query->whereHas('docente.persona', function ($q) use ($docente) {
+                    $q->where('id_persona', "$docente");
+                });
+            })
+            ->pluck('id_grado')
+            ->unique()
+            ->values();
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->when(!empty($grados), function ($query) use ($grados) {
+                $query->whereHas('historialestudiante.grado', function ($q) use ($grados) {
+                    $q->whereIn('id_grado', $grados);
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->paginate(10);
+
+        return response()->json($inasistencias);
+    }
+
+    public function getInasistenciasByResponsable(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+        $responsable = $request->input('responsable');
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->when($responsable, function ($query) use ($responsable) {
+                $query->whereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q) use ($responsable) {
+                    $q->where('id_persona', $responsable);
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->paginate(10);
+
+        return response()->json($inasistencias);
+    }
+
+    public function getAllInasistencias(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->paginate(10);
+
+        // Devolver los usuarios paginados
+        return response()->json($inasistencias);
+    }
+
+    public function getAllInasistenciasExport(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->get();
+
+        return response()->json($inasistencias);
+    }
+
+    public function getAllInasistenciasByDocenteExport(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+        $docente = $request->input('docente');
+
+        $grados = DocenteMateriaGrado::with([
+            'docente.persona',
+            'grado'
+        ])
+            ->when($docente, function ($query) use ($docente) {
+                $query->whereHas('docente.persona', function ($q) use ($docente) {
+                    $q->where('id_persona', "$docente");
+                });
+            })
+            ->pluck('id_grado')
+            ->unique()
+            ->values();
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->when(!empty($grados), function ($query) use ($grados) {
+                $query->whereHas('historialestudiante.grado', function ($q) use ($grados) {
+                    $q->whereIn('id_grado', $grados);
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->get();
+
+        return response()->json($inasistencias);
+    }
+
+    public function getInasistenciasByResponsableExport(Request $request)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $nombre = $request->input('search', '');
+        $desde = $request->input('desde');
+        $hasta = $request->input('hasta');
+        $responsable = $request->input('responsable');
+
+        // Si no se envían fechas, tomar la última semana (lunes a viernes)
+        if (!$desde || !$hasta) {
+            $hoy = Carbon::today();
+            $ultimoViernes = $hoy->copy()->previous(Carbon::FRIDAY);
+            $ultimoLunes = $ultimoViernes->copy()->previous(Carbon::MONDAY);
+
+            $desde = $ultimoLunes->startOfDay();
+            $hasta = $ultimoViernes->endOfDay();
+        } else {
+            $desde = Carbon::parse($desde)->startOfDay();
+            $hasta = Carbon::parse($hasta)->endOfDay();
+        }
+
+        // Filtrar las inasistencias según el parámetro de búsqueda
+        $inasistencias = Inasistencia::with(['historialestudiante.estudiante.persona', 'historialestudiante.grado', 'historialestudiante.grado.seccion'])
+            ->when($nombre, function ($query) use ($nombre) {
+                $query->whereHas('historialestudiante.estudiante.persona', function ($q) use ($nombre) {
+                    $q->where('nombre', 'like', "%{$nombre}%");
+                });
+            })
+            ->when($responsable, function ($query) use ($responsable) {
+                $query->whereHas('historialestudiante.estudiante.responsableEstudiantes.responsable.persona', function ($q) use ($responsable) {
+                    $q->where('id_persona', $responsable);
+                });
+            })
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->get();
+
         return response()->json($inasistencias);
     }
 
@@ -307,12 +557,12 @@ class InasistenciaController extends Controller
                 'inasistencias' => $items->count()
             ];
         })
-        ->sortBy(function ($item) use ($ordenGrados) {
-            return array_search($item['grado'], $ordenGrados) !== false
-                ? array_search($item['grado'], $ordenGrados)
-                : PHP_INT_MAX; // Los que no estén en la lista van al final
-        })
-        ->values();
+            ->sortBy(function ($item) use ($ordenGrados) {
+                return array_search($item['grado'], $ordenGrados) !== false
+                    ? array_search($item['grado'], $ordenGrados)
+                    : PHP_INT_MAX; // Los que no estén en la lista van al final
+            })
+            ->values();
 
         return response()->json([
             'total_anual' => $totalAnio,

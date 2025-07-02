@@ -96,7 +96,13 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/notas', [NotaController::class, 'index']);
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
-    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
+    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReportByGrado']);
+    Route::get('/allinasistencias', [InasistenciaController::class, 'getAllInasistencias']);
+    Route::get('/allinasistencias/export', [InasistenciaController::class, 'getAllInasistenciasExport']);
+    Route::get('allinasistenciasByDocente', [InasistenciaController::class, 'getInasistenciasByDocente']);
+    Route::get('/allinasistenciasByDocente/export', [InasistenciaController::class, 'getAllInasistenciasByDocenteExport']);
+    Route::get('allinasistenciasByResponsable', [InasistenciaController::class, 'getInasistenciasByResponsable']);
+    Route::get('/allinasistenciasByResponsable/export', [InasistenciaController::class, 'getInasistenciasByResponsableExport']);
     Route::get('/reporte-inasistencias-count', [InasistenciaController::class, 'getInasistenciaCount']);
     Route::get('/reporte-inasistencias-days', [InasistenciaController::class, 'getInasistenciaByDays']);
     Route::get('/gradosList', [GradoController::class, 'gradosList']);
@@ -112,6 +118,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
     Route::get('/seccion/all', [SeccionController::class, 'allSecciones']);
     Route::get('/grados/all', [GradoController::class, 'allGrados']);
+    Route::get('/grados/allByID', [GradoController::class, 'allGradosByID']);
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
     Route::get('/notas/all', [NotaController::class, 'allNotas']);
     Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);
@@ -161,6 +168,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     // Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
     Route::get('/estudiantes/secciones/{idRol}/{idPersona}/{turno}', [EstudianteController::class, 'getSecciones']);
     Route::get('/estudiantes/materiasGrado/{turno}/{grado}/{seccion}', [EstudianteController::class, 'getGradoSeccionesMaterias']);
+    Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
+    Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);
     // Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
@@ -179,6 +188,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/admin/buscarEstudianteByNIE', [EstudianteController::class, 'estudiantesByNIE']);
     Route::get('/admin/mostrarPeriodos', [PeriodoController::class, 'index']);
     Route::get('/admin/rendimientoEstudiantil', [EstudianteController::class, 'rendimientoEstudiantil']);
+    Route::get('/responsable/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesPorResponsable']);
+   
 
     //generar boletas
     Route::get('/reportes_boletaFinal/{id_estudiante}/{anio}', [ReportesController::class, 'generarBoletaXestudiante']);
@@ -225,3 +236,5 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 });
 
 
+Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
+Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);
