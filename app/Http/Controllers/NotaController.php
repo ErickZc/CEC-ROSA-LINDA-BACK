@@ -135,8 +135,10 @@ class NotaController extends Controller
             'id_materia' => 'required|integer',
             'id_periodo' => 'required|integer',
             'anio' => 'required|numeric',
+            'usuario' => 'required|string|max:100'
         ]);
 
+        $validated['fecha'] = Carbon::now();   
 
         // Calcular el promedio
         // $validated['promedio'] = (
@@ -174,11 +176,14 @@ class NotaController extends Controller
             $nota = Nota::create($validated);
             $mensaje = 'Nota creada correctamente';
         }
+        
+        // Cargar relación periodo
+        $nota->load('periodo');
 
         return response()->json([
             'message' => $mensaje,
             'nota' => $nota
-        ]);
+        ], 200);
         // return response()->json([
         //     'message' => 'OK'
         // ]);

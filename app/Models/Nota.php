@@ -12,7 +12,20 @@ class Nota extends Model
     use HasFactory;
     protected $table = 'Nota';
     protected $primaryKey = 'id_nota';
-    protected $fillable = ['id_nota', 'id_historial','id_materia', 'actividad1', 'actividad2', 'actividad3', 'actividadInt', 'examen', 'promedio', 'id_periodo'];
+    protected $fillable = [
+        'id_nota',
+        'id_historial',
+        'id_materia',
+        'actividad1',
+        'actividad2',
+        'actividad3',
+        'actividadInt',
+        'examen',
+        'promedio',
+        'id_periodo',
+        'fecha',
+        'usuario'
+    ];
    
     // Deshabilitar los timestamps
     public $timestamps = false;

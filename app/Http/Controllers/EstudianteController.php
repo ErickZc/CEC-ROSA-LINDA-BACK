@@ -701,8 +701,8 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
         ->with(['estudiante.persona'])
         ->paginate(10); // Paginar los resultados
 
-    // Mapear los estudiantes con sus notas filtradas por periodo
-    $estudiantes = $historiales->map(function ($historial) use ($id_materia, $id_periodo) {
+    // Transformar los resultados paginados manteniendo la paginación
+    $estudiantesTransformados = collect($historiales->items())->transform(function ($historial) use ($id_materia, $id_periodo) {
         $notas = Nota::where('id_historial', $historial->id_historial)
             ->where('id_materia', $id_materia)
             ->with('periodo')
@@ -713,7 +713,7 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
         });
 
         if ($notasFiltradas->isEmpty()) {
-            $notasFiltradas = collect([ 
+            $notasFiltradas = collect([
                 (object)[
                     'id_nota' => null,
                     'actividad1' => null,
@@ -729,6 +729,7 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
 
         return [
             'estudiante' => [
+                'id_historial' => $historial->id_historial, // clave única para Vue
                 'id_estudiante' => $historial->estudiante->id_estudiante,
                 'nombre' => $historial->estudiante->persona->nombre,
                 'apellido' => $historial->estudiante->persona->apellido,
@@ -760,7 +761,7 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
         'turno' => $grado->turno,
         'id_materia' => $id_materia,
         'id_periodo' => $id_periodo,
-        'total_estudiantes' => $estudiantes->count(),
+        'total_estudiantes' => $historiales->total(),
         'pagination' => [
             'current_page' => $historiales->currentPage(),
             'from' => $historiales->firstItem(),
@@ -768,7 +769,7 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
             'total' => $historiales->total(),
             'last_page' => $historiales->lastPage(),
         ],
-        'estudiantes' => $estudiantes,
+        'estudiantes' => $estudiantesTransformados,
     ]);
 }
 
