@@ -17,10 +17,16 @@ class DocenteController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    // public function allDocentes()
+    // {
+    //     return Docente::all();
+    // }
+    
     public function allDocentes()
     {
-        return Docente::all();
+        return Docente::with('persona')->get();
     }
+
 
     public function index(Request $request)
     {

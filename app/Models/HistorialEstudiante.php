@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Estudiante;
 use App\Models\Grado;
 use App\Models\Nota;
+use App\Models\Inasistencia;
 
 class HistorialEstudiante extends Model
 {

@@ -28,6 +28,8 @@ use App\Http\Controllers\InasistenciaController;
 use App\Http\Controllers\DocenteMateriaGradoController;
 use App\Http\Controllers\HistorialEstudianteController;
 use App\Http\Controllers\AgentAIController;
+use App\Http\Controllers\RangoFechaNotaController;
+use App\Http\Controllers\NotaAccesoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -186,6 +188,16 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGradoSeccion']);
     Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
     Route::get('/reportes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'generarListadoEstudiantesPorGradoSeccion']);
+
+    // Rutas para la gestión de rango de fechas de los periodos
+    Route::get('/validarPeriodo/all', [RangoFechaNotaController::class, 'index']);
+    Route::match(['put', 'post'], '/validarPeriodo/{id}', [RangoFechaNotaController::class, 'update']);
+    Route::delete('/validarPeriosdo/delete/{id}', [RangoFechaNotaController::class, 'destroy']);
+
+    Route::get('/verificarAccesoNota/all', [NotaAccesoController::class, 'index']);
+    Route::get('/verificarAccesoNota/{idRol}/{idPersona}/{idPeriodo}', [NotaAccesoController::class, 'puedeIngresarNotas']);
+    Route::match(['put', 'post'], '/verificarAccesoNota/{id}', [NotaAccesoController::class, 'guardarHabilitacion']);
+    Route::delete('/verificarAccesoNota/{id}', [NotaAccesoController::class, 'destroy']);
 
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
