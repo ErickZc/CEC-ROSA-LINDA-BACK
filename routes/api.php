@@ -94,7 +94,13 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/notas', [NotaController::class, 'index']);
     Route::get('/doc_mat_grad', [DocenteMateriaGradoController::class, 'index']);
     Route::get('/inasistencias', [InasistenciaController::class, 'index']);
-    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReport']);
+    Route::get('/reporte-inasistencias', [InasistenciaController::class, 'getInasistenciaReportByGrado']);
+    Route::get('/allinasistencias', [InasistenciaController::class, 'getAllInasistencias']);
+    Route::get('/allinasistencias/export', [InasistenciaController::class, 'getAllInasistenciasExport']);
+    Route::get('allinasistenciasByDocente', [InasistenciaController::class, 'getInasistenciasByDocente']);
+    Route::get('/allinasistenciasByDocente/export', [InasistenciaController::class, 'getAllInasistenciasByDocenteExport']);
+    Route::get('allinasistenciasByResponsable', [InasistenciaController::class, 'getInasistenciasByResponsable']);
+    Route::get('/allinasistenciasByResponsable/export', [InasistenciaController::class, 'getInasistenciasByResponsableExport']);
     Route::get('/reporte-inasistencias-count', [InasistenciaController::class, 'getInasistenciaCount']);
     Route::get('/reporte-inasistencias-days', [InasistenciaController::class, 'getInasistenciaByDays']);
     Route::get('/gradosList', [GradoController::class, 'gradosList']);
@@ -180,7 +186,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/admin/buscarEstudianteByNIE', [EstudianteController::class, 'estudiantesByNIE']);
     Route::get('/admin/mostrarPeriodos', [PeriodoController::class, 'index']);
     Route::get('/admin/rendimientoEstudiantil', [EstudianteController::class, 'rendimientoEstudiantil']);
-     Route::get('/responsable/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesPorResponsable']);
+    Route::get('/responsable/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesPorResponsable']);
    
 
     //generar boletas
