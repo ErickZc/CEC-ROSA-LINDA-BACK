@@ -371,9 +371,23 @@ class EstudianteController extends Controller
 
     public function getSecciones($idRol, $idPersona, $turno)
     {
-        if (!in_array($idRol, [1, 2])) {
+        if (!in_array($idRol, [1, 2, 3])) {
             return response()->json(['error' => 'No autorizado. Rol no permitido.'], 403);
         }
+
+        $ordenGrados = [
+            'Primero' => 1,
+            'Segundo' => 2,
+            'Tercero' => 3,
+            'Cuarto' => 4,
+            'Quinto' => 5,
+            'Sexto' => 6,
+            'Septimo' => 7,
+            'Octavo' => 8,
+            'Noveno' => 9,
+            '1er Bachillerato' => 10,
+            '2do Bachillerato' => 11
+        ];
 
         // =================== ADMINISTRADOR ===================
         if ($idRol == 1) {
@@ -422,7 +436,63 @@ class EstudianteController extends Controller
                 'rol' => 'ADMINISTRADOR',
                 'total_secciones' => $secciones->unique('id_seccion')->count(),
                 'secciones' => $secciones->unique('id_seccion')->values(),
-                'grados' => $grados->unique(fn ($item) => $item['id_grado'])->sortBy('grado')->values(),
+                'grados' => $grados->unique(fn ($item) => $item['id_grado'])
+                    ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+                    ->values(),
+                'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
+            ]);
+        }
+
+        // =================== COORDINADOR ===================
+        if ($idRol == 3) {
+            $asignaciones = DocenteMateriaGrado::with(['materia', 'grado.seccion'])->get();
+
+            if ($asignaciones->isEmpty()) {
+                return response()->json([
+                    'rol' => 'COORDINADOR',
+                    'message' => 'No hay asignaciones registradas en el sistema.',
+                    'total_secciones' => 0,
+                    'secciones' => [],
+                    'grados' => [],
+                    'materias' => []
+                ], 200);
+            }
+
+            $secciones = collect();
+            $grados = collect();
+            $materias = collect();
+
+            foreach ($asignaciones as $asignacion) {
+                $grado = $asignacion->grado;
+                $seccion = $grado->seccion;
+                $materia = $asignacion->materia;
+
+                if ($grado->turno === $turno) {
+                    $secciones->push($seccion);
+
+                    $grados->push([
+                        'id_grado' => $grado->id_grado,
+                        'grado' => $grado->grado,
+                        'id_seccion' => $grado->id_seccion,
+                        'seccion' => $seccion->seccion,
+                        'grado_seccion' => $grado->grado . ' ' . $seccion->seccion,
+                        'turno' => $grado->turno
+                    ]);
+
+                    $materias->push([
+                        'id_materia' => $materia->id_materia,
+                        'nombre_materia' => $materia->nombre_materia
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'rol' => 'COORDINADOR',
+                'total_secciones' => $secciones->unique('id_seccion')->count(),
+                'secciones' => $secciones->unique('id_seccion')->values(),
+                'grados' => $grados->unique(fn ($item) => $item['id_grado'])
+                    ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+                    ->values(),
                 'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
             ]);
         }
@@ -480,7 +550,9 @@ class EstudianteController extends Controller
             'rol' => 'DOCENTE',
             'total_secciones' => $secciones->unique('id_seccion')->count(),
             'secciones' => $secciones->unique('id_seccion')->values(),
-            'grados' => $grados->unique(fn ($item) => $item['id_grado'])->sortBy('grado')->values(),
+            'grados' => $grados->unique(fn ($item) => $item['id_grado'])
+                ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+                ->values(),
             'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
         ]);
     }
@@ -522,6 +594,107 @@ class EstudianteController extends Controller
             'message' => 'Consulta realizada correctamente.',
             'total' => $materias->count(),
             'materias' => $materias->sortBy('nombre_materia')->values()
+        ]);
+    }
+
+    public function getGradoSeccionesMateriasByDocente(Request $request)
+    {
+        // Validación de parámetros
+        $validator = Validator::make($request->all(), [
+            'id_persona' => 'required|integer|exists:Docente,id_persona',
+            'id_grado'   => 'required|integer|exists:Grado,id_grado',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Error de validación',
+                'errores' => $validator->errors(),
+            ], 422);
+        }
+
+        $id_persona = $request->input('id_persona');
+        $id_grado = $request->input('id_grado');
+        $estado = 'ACTIVO';
+
+        // Obtener datos
+        $materias = DB::table('Docente as d')
+            ->join('Docente_Materia_Grado as dmg', 'd.id_docente', '=', 'dmg.id_docente')
+            ->join('Materia as m', 'm.id_materia', '=', 'dmg.id_materia')
+            ->join('Grado as g', 'g.id_grado', '=', 'dmg.id_grado')
+            ->select('m.id_materia', 'm.nombre_materia')
+            ->where('d.id_persona', $id_persona)
+            ->where('g.id_grado', $id_grado)
+            ->where('d.estado', $estado)
+            ->where('dmg.estado', $estado)
+            ->where('g.estado', $estado)
+            ->where('m.estado', $estado)
+            ->whereYear('dmg.fecha_asignacion', now()->year)
+            ->distinct()
+            ->get();
+
+        if ($materias->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No se encontraron materias activas asignadas al docente en ese grado.',
+                'data' => [],
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'mensaje' => 'Materias obtenidas correctamente.',
+            'data' => $materias,
+        ]);
+    }
+
+    public function getGradoSeccionesMateriasByCoordinador(Request $request)
+    {
+        // Validación de parámetros
+        $validator = Validator::make($request->all(), [
+            'id_grado'   => 'required|integer|exists:Grado,id_grado',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Error de validación',
+                'errores' => $validator->errors(),
+            ], 422);
+        }
+
+        //$id_persona = $request->input('id_persona');
+        $id_grado = $request->input('id_grado');
+        $estado = 'ACTIVO';
+
+        // Obtener datos
+        $materias = DB::table('Docente as d')
+            ->join('Docente_Materia_Grado as dmg', 'd.id_docente', '=', 'dmg.id_docente')
+            ->join('Materia as m', 'm.id_materia', '=', 'dmg.id_materia')
+            ->join('Grado as g', 'g.id_grado', '=', 'dmg.id_grado')
+            ->select('m.id_materia', 'm.nombre_materia')
+            //->where('d.id_persona', $id_persona)
+            ->where('g.id_grado', $id_grado)
+            ->where('d.estado', $estado)
+            ->where('dmg.estado', $estado)
+            ->where('g.estado', $estado)
+            ->where('m.estado', $estado)
+            ->whereYear('dmg.fecha_asignacion', now()->year)
+            ->distinct()
+            ->get();
+
+        if ($materias->isEmpty()) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'No se encontraron materias activas asignadas al docente en ese grado.',
+                'data' => [],
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'mensaje' => 'Materias obtenidas correctamente.',
+            'data' => $materias,
         ]);
     }
 

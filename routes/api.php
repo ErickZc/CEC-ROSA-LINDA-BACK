@@ -110,6 +110,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/secciones/all', [GradoController::class, 'allSecciones']);
     Route::get('/seccion/all', [SeccionController::class, 'allSecciones']);
     Route::get('/grados/all', [GradoController::class, 'allGrados']);
+    Route::get('/grados/allByID', [GradoController::class, 'allGradosByID']);
     Route::get('/materias/all', [MateriaController::class, 'allMaterias']);
     Route::get('/notas/all', [NotaController::class, 'allNotas']);
     Route::get('/periodos/all', [PeriodoController::class, 'allPeriodos']);
@@ -159,6 +160,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     // Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
     Route::get('/estudiantes/secciones/{idRol}/{idPersona}/{turno}', [EstudianteController::class, 'getSecciones']);
     Route::get('/estudiantes/materiasGrado/{turno}/{grado}/{seccion}', [EstudianteController::class, 'getGradoSeccionesMaterias']);
+    Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
+    Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);
     // Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
@@ -215,3 +218,5 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 });
 
 
+Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
+Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);
