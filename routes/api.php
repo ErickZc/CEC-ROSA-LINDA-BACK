@@ -203,12 +203,15 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     // Rutas para la gestión de rango de fechas de los periodos
     Route::get('/validarPeriodo/all', [RangoFechaNotaController::class, 'index']);
     Route::match(['put', 'post'], '/validarPeriodo/{id}', [RangoFechaNotaController::class, 'update']);
-    Route::delete('/validarPeriosdo/delete/{id}', [RangoFechaNotaController::class, 'destroy']);
+    Route::delete('/DeleteValidarPeriodo/{id}', [RangoFechaNotaController::class, 'destroy']);
 
+    // Rutas para la gestión de rangos especiales de fechas de los periodos
     Route::get('/verificarAccesoNota/all', [NotaAccesoController::class, 'index']);
     Route::get('/verificarAccesoNota/{idRol}/{idPersona}/{idPeriodo}', [NotaAccesoController::class, 'puedeIngresarNotas']);
-    Route::match(['put', 'post'], '/verificarAccesoNota/{id}', [NotaAccesoController::class, 'guardarHabilitacion']);
-    Route::delete('/verificarAccesoNota/{id}', [NotaAccesoController::class, 'destroy']);
+    // Route::match(['put', 'post'], '/verificarAccesoNota/{id?}', [NotaAccesoController::class, 'guardarHabilitacion']);
+    Route::delete('/DeleteVerificarAccesoNota/{id}', [NotaAccesoController::class, 'destroy']);
+    Route::post('/verificarAccesoNota', [NotaAccesoController::class, 'guardarHabilitacion']);
+    Route::put('/verificarAccesoNota/{id?}', [NotaAccesoController::class, 'guardarHabilitacion']);
 
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);

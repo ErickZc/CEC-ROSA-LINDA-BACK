@@ -130,12 +130,12 @@ class NotaAccesoController extends Controller
             // Actualizar
             $habilitacion = HabilitacionDocente::find($id);
             if (!$habilitacion) {
-                return response()->json(['error' => 'Habilitación no encontrada'], 404);
+                return response()->json(['error' => 'Periodo Especial no encontrada'], 404);
             }
             $habilitacion->update($data);
 
             return response()->json([
-                'message' => 'Habilitación actualizada correctamente',
+                'message' => 'Periodo Especial actualizada correctamente',
                 'data' => $habilitacion,
             ], 200);
         } else {
@@ -143,7 +143,7 @@ class NotaAccesoController extends Controller
             $habilitacion = HabilitacionDocente::create($data);
 
             return response()->json([
-                'message' => 'Habilitación creada correctamente',
+                'message' => 'Periodo Especial creada correctamente',
                 'data' => $habilitacion,
             ], 201);
         }
@@ -155,7 +155,7 @@ class NotaAccesoController extends Controller
         $habilitacion = HabilitacionDocente::findOrFail($id);
         $habilitacion->delete();
 
-        return response()->json(['message' => 'Habilitación eliminada correctamente']);
+        return response()->json(['message' => 'Periodo Especial eliminada correctamente']);
     }
 
 

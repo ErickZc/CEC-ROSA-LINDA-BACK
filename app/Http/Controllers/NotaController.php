@@ -134,8 +134,7 @@ class NotaController extends Controller
             'id_grado' => 'required|integer', // sin exists
             'id_materia' => 'required|integer',
             'id_periodo' => 'required|integer',
-            'anio' => 'required|numeric',
-            'usuario' => 'required|string|max:100'
+            'anio' => 'required|numeric'
         ]);
 
         $validated['fecha'] = Carbon::now();   

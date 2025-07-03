@@ -48,7 +48,7 @@ class RangoFechaNotaController extends Controller
         }
 
         return response()->json([
-            'message' => 'exitoso',
+            'message' => $mensaje,
             'request' => $request->all()
         ], 200);
     }
