@@ -109,8 +109,8 @@ class NotaAccesoController extends Controller
     public function guardarHabilitacion(Request $request, $id = null)
     {
         $validated = $request->validate([
-            'id_docente' => 'required|integer|exists:docente,id_docente',
-            'id_periodo' => 'required|integer|exists:periodo,id_periodo',
+            'id_docente' => 'required|integer|exists:Docente,id_docente',
+            'id_periodo' => 'required|integer|exists:Periodo,id_periodo',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'motivo' => 'nullable|string|max:255',
