@@ -158,7 +158,7 @@ class AuthController extends Controller
         $usuario->password = Hash::make($request->nueva_contrasena);
         $usuario->save();
 
-        return response()->json(['message' => 'Contraseña actualizada con éxito']);
+        return response()->json(['message' => 'Contraseña actualizada con éxito'], 200);
     }
 
     public function refresh()

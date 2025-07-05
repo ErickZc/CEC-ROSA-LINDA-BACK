@@ -15,6 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class EstudianteController extends Controller
 {
@@ -32,6 +35,442 @@ class EstudianteController extends Controller
      public function allEstudiantes()
     {
         return Estudiante::all();
+    }
+
+
+    public function enviarNotasAllGradoResponsable(Request $request)
+    {
+        setlocale(LC_TIME, 'es_ES.UTF-8');
+        Carbon::setLocale('es');
+        $date = Carbon::now('America/El_Salvador');
+
+        $grado = $request->grado;
+        $materia = $request->materia;
+        $periodo = $request->periodo;
+        $estudiantesConNota = $request->estudiantesConNota;
+        $estado = 'ACTIVO';
+        $enviados = 0;
+        $no_enviados = [];
+
+        $anioActual = date('Y');
+        
+        // Validar que se reciban los datos necesarios
+        if (!$grado || !$materia || !$periodo || !$estudiantesConNota || !is_array($estudiantesConNota)) {
+            return response()->json(['error' => 'Todos los campos son obligatorios y estudiantesConNota debe ser un array'], 400);
+        }
+
+        
+        foreach ($estudiantesConNota as $item) {
+            try {
+
+                if (!isset($item['estudiante']) || !isset($item['notas'])) {
+                    $no_enviados[] = [
+                        'motivo' => 'Estructura inválida de estudiante o notas',
+                        'detalle' => $item
+                    ];
+                    continue;
+                }
+
+                $estudiante = $item['estudiante'];
+                $notas = $item['notas'];
+
+                $id_estudiante = $estudiante['id_estudiante'] ?? null;
+
+                if (!$id_estudiante || empty($notas)) {
+                    $no_enviados[] = [
+                        'id_estudiante' => $id_estudiante,
+                        'nombre' => ($estudiante['nombre'] ?? '-') . ' ' . ($estudiante['apellido'] ?? '-'),
+                        'motivo' => 'ID estudiante o notas vacías'
+                    ];
+                    continue;
+                }
+
+                // Obtener correo del responsable
+                $responsable = DB::table('Estudiante as e')
+                    ->join('Responsable_Estudiante as re', 'e.id_estudiante', '=', 're.id_estudiante')
+                    ->join('Responsable as r', 'r.id_responsable', '=', 're.id_responsable')
+                    ->join('Persona as p', 'p.id_persona', '=', 'r.id_persona')
+                    ->join('Usuario as u', 'u.id_persona', '=', 'p.id_persona')
+                    ->where('e.id_estudiante', $id_estudiante)
+                    ->where('e.estado', $estado)
+                    ->where('re.estado', $estado)
+                    ->where('r.estado', $estado)
+                    ->where('u.estado', $estado)
+                    ->select('u.correo', 'p.nombre', 'p.apellido')
+                    ->first();
+
+
+            
+                if ($responsable && $responsable->correo) {
+                    $nombreEstudiante = trim($estudiante['nombre'] ?? '') . ' ' . trim($estudiante['apellido'] ?? '');
+                    $nombreResponsable = trim($responsable->nombre ?? '') . ' ' . trim($responsable->apellido ?? '');
+                    $materia = is_string($materia) ? $materia : json_encode($materia);
+                    $grado = is_string($grado) ? $grado : json_encode($grado);
+                    $periodo = is_string($periodo) ? $periodo : json_encode($periodo);
+
+
+                    // Armar contenido del correo
+                    $htmlContent = '
+                        <div style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
+
+                            <div style="margin-bottom: 20px;">
+                                <p style="font-size: 16px;">Estimado/a <strong>' . $nombreResponsable . '</strong>,</p>
+
+                                <p style="font-size: 16px;">
+                                    Reciba un cordial saludo de parte del equipo académico. 
+                                    Esperamos que usted y su familia se encuentren muy bien.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    A continuación, le compartimos el resumen de calificaciones de su hijo/a <strong>' . $nombreEstudiante . '</strong>,
+                                    correspondiente a la asignatura <strong>' . $materia . '</strong> del grado <strong>' . $grado . '</strong>.
+                                </p>
+                            </div>
+
+                            <div style="max-width: 700px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                                
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #2610f3; border-bottom: 1px solid #2610f3;">
+                                        <tr>
+                                            <td style="padding: 16px 24px;">
+                                                <h4 style="font-size: 18px; font-weight: 600; color: #ffffff; margin: 0;">Notas de ' . $materia . '</h4>
+                                            </td>
+                                            <td style="padding: 16px 24px;" align="right">
+                                                <h4 style="font-size: 18px; font-weight: 600; color: #ffffff; margin: 0;">' . $periodo . '</h4>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                <div style="overflow-x: auto; padding: 20px;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #374151;">
+                                        <thead style="background-color: #f3f4f6;">
+                                            <tr>
+                                                <th colspan="3" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Actividad cotidiana (35%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Act Int (35%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Examen (30%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Promedio
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Estado
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 1</th>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 2</th>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 3</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>';
+
+                        foreach ($notas as $n) {
+
+                            
+                            $promedioRaw = $n['promedio'] ?? null;
+
+                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
+                                    $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
+                                } else {
+                                    $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
+                                }
+                            
+                            $htmlContent .= '
+                                <tr style="background-color: #ffffff;">
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad1'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad2'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
+                                </tr>';
+                        }
+
+                        $htmlContent .= '
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                                <p style="font-size: 16px; margin-top: 20px;">
+                                    Este informe fue generado el día <strong>' . $date->translatedFormat('j \\d\\e F Y') . '</strong> a las <strong>' . $date->format('g:i A') . '</strong>.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    Si tiene alguna duda o necesita información adicional, le invitamos a comunicarse con el centro educativo.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    Por favor, no responda a este correo ya que es un mensaje automático.
+                                </p>
+
+                                <p style="font-size: 16px; margin-top: 10px;">
+                                    Atentamente,<br>
+                                    <strong>Equipo de Soporte Técnico</strong>
+                                </p>
+                            </div>';
+
+
+                    
+
+
+                    // Enviar correo
+                    try {
+                        Mail::html($htmlContent, function ($message) use ($responsable, $nombreEstudiante, $periodo) {
+                            $correoDestino = $responsable->correo ?? null;
+
+                            if ($correoDestino) {
+                                $message->to($correoDestino)
+                                        ->subject("Notas de $nombreEstudiante - $periodo");
+                            }
+                        });
+
+                        $enviados++;
+                    } catch (\Exception $ex) {
+                        $no_enviados[] = [
+                            'id_estudiante' => $estudiante['id_estudiante'],
+                            'nombre' => $nombreEstudiante,
+                            'motivo' => 'Fallo dentro de Mail::html: ' . $ex->getMessage()
+                        ];
+
+                        Log::error("Fallo al enviar correo para $nombreEstudiante: " . $ex->getMessage());
+                    }
+
+
+
+                    $enviados++;
+                } 
+
+            }  catch (\Exception $e) {
+                $no_enviados[] = [
+                    'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
+                    'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
+                    'motivo' => 'Error inesperado: ' . $e->getMessage()
+                ];
+
+                Log::error('Error al enviar correo a responsable', [
+                    'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
+                    'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return response()->json([
+                'message' => 'Correos enviados',
+                'total_enviados' => $enviados,
+                'no_enviados' => $no_enviados
+        ]);  
+    }
+
+    public function enviarNotasGradoResponsableFiltrado(Request $request)
+    {
+        setlocale(LC_TIME, 'es_ES.UTF-8');
+        Carbon::setLocale('es');
+        $date = Carbon::now('America/El_Salvador');
+
+        $grado = $request->grado;
+        $materia = $request->materia;
+        $periodo = $request->periodo;
+        $estudiantesConNota = $request->estudiantesConNota;
+        $responsableNombre = $request->responsableNombre;
+        $responsableApellido = $request->responsableApellido;
+        $responsableCorreo = $request->responsableCorreo;
+        $estado = 'ACTIVO';
+        $enviados = 0;
+        $no_enviados = [];
+
+        $anioActual = date('Y');
+        
+        // Validar que se reciban los datos necesarios
+        if (!$grado || !$materia || !$periodo || !$estudiantesConNota || !is_array($estudiantesConNota)) {
+            return response()->json(['error' => 'Todos los campos son obligatorios y estudiantesConNota debe ser un array'], 400);
+        }
+
+        
+        foreach ($estudiantesConNota as $item) {
+            try {
+
+                if (!isset($item['estudiante']) || !isset($item['notas'])) {
+                    $no_enviados[] = [
+                        'motivo' => 'Estructura inválida de estudiante o notas',
+                        'detalle' => $item
+                    ];
+                    continue;
+                }
+
+                $estudiante = $item['estudiante'];
+                $notas = $item['notas'];
+
+                $id_estudiante = $estudiante['id_estudiante'] ?? null;
+
+                if (!$id_estudiante || empty($notas)) {
+                    $no_enviados[] = [
+                        'id_estudiante' => $id_estudiante,
+                        'nombre' => ($estudiante['nombre'] ?? '-') . ' ' . ($estudiante['apellido'] ?? '-'),
+                        'motivo' => 'ID estudiante o notas vacías'
+                    ];
+                    continue;
+                }
+
+                    $nombreEstudiante = trim($estudiante['nombre'] ?? '') . ' ' . trim($estudiante['apellido'] ?? '');
+                    $nombreResponsable = trim($responsableNombre ?? '') . ' ' . trim($responsableApellido ?? '');
+                    $materia = is_string($materia) ? $materia : json_encode($materia);
+                    $grado = is_string($grado) ? $grado : json_encode($grado);
+                    $periodo = is_string($periodo) ? $periodo : json_encode($periodo);
+
+
+                    // Armar contenido del correo
+                    $htmlContent = '
+                        <div style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
+
+                            <div style="margin-bottom: 20px;">
+                                <p style="font-size: 16px;">Estimado/a <strong>' . $nombreResponsable . '</strong>,</p>
+
+                                <p style="font-size: 16px;">
+                                    Reciba un cordial saludo de parte del equipo académico. 
+                                    Esperamos que usted y su familia se encuentren muy bien.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    A continuación, le compartimos el resumen de calificaciones de su hijo/a <strong>' . $nombreEstudiante . '</strong>,
+                                    correspondiente a la asignatura <strong>' . $materia . '</strong> del grado <strong>' . $grado . '</strong>.
+                                </p>
+                            </div>
+
+                            <div style="max-width: 700px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                                
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #2610f3; border-bottom: 1px solid #2610f3;">
+                                        <tr>
+                                            <td style="padding: 16px 24px;">
+                                                <h4 style="font-size: 18px; font-weight: 600; color: #ffffff; margin: 0;">Notas de ' . $materia . '</h4>
+                                            </td>
+                                            <td style="padding: 16px 24px;" align="right">
+                                                <h4 style="font-size: 18px; font-weight: 600; color: #ffffff; margin: 0;">' . $periodo . '</h4>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                <div style="overflow-x: auto; padding: 20px;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #374151;">
+                                        <thead style="background-color: #f3f4f6;">
+                                            <tr>
+                                                <th colspan="3" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Actividad cotidiana (35%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Act Int (35%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Examen (30%)
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Promedio
+                                                </th>
+                                                <th rowspan="2" style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; background-color: #f3f4f6; font-weight: 600; color: #1f2937;">
+                                                    Estado
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 1</th>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 2</th>
+                                                <th style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #1f2937;">Act 3</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>';
+
+                        foreach ($notas as $n) {
+
+                            
+                            $promedioRaw = $n['promedio'] ?? null;
+
+                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
+                                    $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
+                                } else {
+                                    $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
+                                }
+                            
+                            $htmlContent .= '
+                                <tr style="background-color: #ffffff;">
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad1'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad2'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
+                                </tr>';
+                        }
+
+                        $htmlContent .= '
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                                <p style="font-size: 16px; margin-top: 20px;">
+                                    Este informe fue generado el día <strong>' . $date->translatedFormat('j \\d\\e F Y') . '</strong> a las <strong>' . $date->format('g:i A') . '</strong>.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    Si tiene alguna duda o necesita información adicional, le invitamos a comunicarse con el centro educativo.
+                                </p>
+
+                                <p style="font-size: 16px;">
+                                    Por favor, no responda a este correo ya que es un mensaje automático.
+                                </p>
+
+                                <p style="font-size: 16px; margin-top: 10px;">
+                                    Atentamente,<br>
+                                    <strong>Equipo de Soporte Técnico</strong>
+                                </p>
+                            </div>';
+
+                    // Enviar correo
+                    try {
+                        Mail::html($htmlContent, function ($message) use ($responsableCorreo, $nombreEstudiante, $periodo) {
+                            if (!empty($responsableCorreo)) {
+                                $message->to($responsableCorreo)
+                                        ->subject("Notas de $nombreEstudiante - $periodo");
+                            }
+                        });
+
+                        $enviados++;
+                    } catch (\Exception $ex) {
+                        $no_enviados[] = [
+                            'id_estudiante' => $estudiante['id_estudiante'],
+                            'nombre' => $nombreEstudiante,
+                            'motivo' => 'Fallo dentro de Mail::html: ' . $ex->getMessage()
+                        ];
+
+                        Log::error("Fallo al enviar correo para $nombreEstudiante: " . $ex->getMessage());
+                    }
+                
+            }  catch (\Exception $e) {
+                $no_enviados[] = [
+                    'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
+                    'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
+                    'motivo' => 'Error inesperado: ' . $e->getMessage()
+                ];
+
+                Log::error('Error al enviar correo a responsable', [
+                    'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
+                    'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return response()->json([
+                'message' => 'Correos enviados',
+                'total_enviados' => $enviados,
+                'no_enviados' => $no_enviados
+        ]);  
     }
 
     public function index(Request $request)
@@ -73,6 +512,66 @@ class EstudianteController extends Controller
         }
 
         return response()->json($estudiantes);
+    }
+
+    public function obtenerResponsablePorNombreCompleto(Request $request)
+    {
+        $nombreCompleto = trim($request->nombre_completo);
+        $idGrado = $request->id_grado;
+
+        if (!$nombreCompleto || !$idGrado) {
+            return response()->json([
+                'error' => 'El nombre completo y el ID de grado son campos obligatorios.'
+            ], 400);
+        }
+
+        try {
+            // Buscar al estudiante por nombre completo y grado en el año actual
+            $estudiante = DB::table('Persona as p')
+                ->join('Estudiante as e', 'e.id_persona', '=', 'p.id_persona')
+                ->join('Historial_Estudiante as he', 'he.id_estudiante', '=', 'e.id_estudiante')
+                ->where(DB::raw("CONCAT(p.nombre, ' ', p.apellido)"), 'LIKE', "%$nombreCompleto%")
+                ->where('he.anio', '=', date('Y'))
+                ->where('he.id_grado', '=', $idGrado)
+                ->where('e.estado', '=', 'ACTIVO')
+                ->select('e.id_estudiante')
+                ->limit(1)
+                ->first();
+
+            if (!$estudiante) {
+                return response()->json([
+                    'error' => 'No se encontró un estudiante con ese nombre en el grado y año actual.'
+                ], 404);
+            }
+
+            // Buscar al responsable del estudiante
+            $responsables = DB::table('Responsable_Estudiante as re')
+                ->join('Responsable as r', 'r.id_responsable', '=', 're.id_responsable')
+                ->join('Persona as p', 'p.id_persona', '=', 'r.id_persona')
+                ->join('Usuario as u', 'u.id_persona', '=', 'p.id_persona')
+                ->where('re.id_estudiante', '=', $estudiante->id_estudiante)
+                ->where('u.estado', '=', 'ACTIVO')
+                ->where('r.estado', '=', 'ACTIVO')
+                ->where('re.estado', '=', 'ACTIVO')
+                ->select('p.nombre', 'p.apellido', 're.parentesco', 'u.correo')
+                ->get();
+
+            if ($responsables->isEmpty()) {
+                return response()->json([
+                    'error' => 'No se encontraron responsables activos para este estudiante.'
+                ], 404);
+            }
+
+            return response()->json([
+                'estudiante_id' => $estudiante->id_estudiante,
+                'responsables' => $responsables
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Ocurrió un error inesperado: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function estudiantesByNIE(Request $request)
@@ -144,12 +643,12 @@ class EstudianteController extends Controller
                 m.nombre_materia,
                 n.promedio,
                 CASE
-                    WHEN n.actividad1 > 0 THEN n.actividad1
-                    WHEN n.actividad2 > 0 THEN n.actividad2
-                    WHEN n.actividad3 > 0 THEN n.actividad3
-                    WHEN n.actividadInt > 0 THEN n.actividadInt
                     WHEN n.examen > 0 THEN n.examen
-                    ELSE NULL
+                    WHEN n.actividadInt > 0 THEN n.actividadInt
+                    WHEN n.actividad3 > 0 THEN n.actividad3
+                    WHEN n.actividad2 > 0 THEN n.actividad2
+                    WHEN n.actividad1 > 0 THEN n.actividad1                
+                ELSE NULL
                     END AS ultima_nota,
                 CONCAT(
                     (CASE WHEN n.actividad1 > 0 THEN 1 ELSE 0 END) +

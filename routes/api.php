@@ -44,10 +44,7 @@ use App\Http\Controllers\NotaAccesoController;
 
 // Rutas para el login
 Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::get('/test', function () {
-    return response()->json(['message' => 'API funcionando correctamente']);
-});
-    // Ruta para validar existencia de un correo
+// Ruta para validar existencia de un correo
 Route::post('/validarCorreo', [AuthController::class, 'validarCorreo']);
 Route::post('/validarCorreoCoordinador', [AuthController::class, 'validarCorreoCoordinador']);
 // Ruta para validar credenciales
@@ -66,7 +63,6 @@ Route::post('/enviar-otp', [RecoveryController::class, 'sendOTP']);
 // Nueva ruta para refrescar el token
 Route::post('/refresh', [AuthController::class, 'refresh']);
 
-
 /*Route::middleware('auth:api')->get('/user', function (Request $request) {
     $user = auth()->user();
     // o también
@@ -74,12 +70,9 @@ Route::post('/refresh', [AuthController::class, 'refresh']);
     return response()->json($user);
 });*/
 
-
-
 // Middleware con llave privada para consumo de API
 Route::middleware(['auth:api', 'api.key'])->group(function () {
     
-    //Route::get('/docentes', [DocenteController::class, 'index']);
     Route::resource('/responsables', ResponsableController::class)->except(['show']);
     Route::resource('/docentes', DocenteController::class)->except(['show']);
     Route::resource('/personas', PersonaController::class)->except(['show']);
@@ -88,9 +81,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::resource('/grados', GradoController::class)->except(['show']);
     Route::resource('/usuarios', UsuarioController::class)->except(['show']);
     Route::resource('/estudiantes', EstudianteController::class)->except(['show']);
-    //Route::get('/estudiantes', [EstudianteController::class, 'index']);
     Route::resource('/historial', HistorialEstudianteController::class)->except(['show']);
-    //Route::get('/historial', [HistorialEstudianteController::class, 'index']);
     Route::resource('/materias', MateriaController::class)->except(['show']);
     Route::get('/periodos', [PeriodoController::class, 'index']);
     Route::get('/notas', [NotaController::class, 'index']);
@@ -163,19 +154,17 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
     Route::get('/materias/{id}', [MateriaController::class, 'show']);
     Route::get('/estudiantes/{id}', [EstudianteController::class, 'show']);
-    // Route::get('/estudiantes/seccion/{id}', [EstudianteController::class, 'searchSeccion']);
-    // Route::get('/estudiantes/seccion/{idSeccion}/rol/{idRol}', [EstudianteController::class, 'filterDataSecciones']);
-    // Route::get('/estudiantes/seccion/{idRol}/{idPersona}', [EstudianteController::class, 'seccionesPorUsuario']);
     Route::get('/estudiantes/secciones/{idRol}/{idPersona}/{turno}', [EstudianteController::class, 'getSecciones']);
     Route::get('/estudiantes/materiasGrado/{turno}/{grado}/{seccion}', [EstudianteController::class, 'getGradoSeccionesMaterias']);
     Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
     Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);
-    // Route::get('/estudiantes/notas/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
-    // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_seccion}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
-    // Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     Route::get('/estudiantes/notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [EstudianteController::class, 'estudiantesConNotasFiltrados']);
     Route::get('/estudiantes/notasNew/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltradosNew']);
-    // Route::put('/notas/{id}', [NotaController::class, 'update']);
+    Route::get('/estudiantes/notas/enviarNotasAllGrado', [EstudianteController::class, 'enviarNotasAllGrado']);
+    Route::post('/estudiantes/notas/enviarNotasAllGradoResponsable', [EstudianteController::class, 'enviarNotasAllGradoResponsable']);
+    Route::post('/estudiantes/notas/enviarNotasGradoResponsableFiltrado', [EstudianteController::class, 'enviarNotasGradoResponsableFiltrado']);
+    Route::get('/estudiantes/responsable/obtenerResponsablePorNombreCompleto', [EstudianteController::class, 'obtenerResponsablePorNombreCompleto']);
+
     Route::match(['put', 'post'], '/notas/{id?}', [NotaController::class, 'update']);
 
     Route::post('/notasNew', [NotaController::class, 'store']);
@@ -237,7 +226,3 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
         Route::post('/coordinador/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
         Route::post('/coordinador/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
 });
-
-
-Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByDocente', [EstudianteController::class, 'getGradoSeccionesMateriasByDocente']);
-Route::get('/estudiantes/materiasGrado/getGradoSeccionesMateriasByCoordinador', [EstudianteController::class, 'getGradoSeccionesMateriasByCoordinador']);

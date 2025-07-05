@@ -54,14 +54,14 @@ class OtpController extends Controller
             return response()->json([
                 'message' => 'El token no es correcto.',
                 'codigo' => 'invalido'
-            ], 401);
+            ], 400);
         }
 
         if($otp->fecha_hora < Carbon::now()->subMinutes($expiracion)){
             return response()->json([
                 'message' => 'El token ha expirado.',
                 'codigo' => 'expirado'
-            ], 401);
+            ], 400);
         }
 
         // Si el token es correcto y no ha expirado, se puede proceder
