@@ -148,7 +148,8 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
     Route::post('/permisos/permisosPorCoordinador', [PermisosController::class, 'getPermisosByCoordinador']);
     Route::post('/estudiantes/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesByResponsable']);
-    
+    Route::post('/estudiantes/estudiantesLstPorResponsable', [EstudianteController::class, 'allEstudiantesByResponsable']);
+
     // Rutas para la gestión de notas
     Route::get('/notas', [PeriodoController::class, 'index']);
     Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
