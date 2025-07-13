@@ -137,7 +137,7 @@ class GradoController extends Controller
         $grado = Grado::with('seccion')
             ->where('estado', 'ACTIVO')
             ->where('turno', $turno)
-            ->whereIn('grado', ['Segundo', 'Tercero'])
+            ->whereIn('grado', ['Primero','Segundo', 'Tercero'])
             ->get();
 
 
