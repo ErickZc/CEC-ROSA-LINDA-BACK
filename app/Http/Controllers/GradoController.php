@@ -101,9 +101,29 @@ class GradoController extends Controller
 
     public function gradosList()
     {
-        $grado = Grado::with('seccion')->where('estado','ACTIVO')->get();
+        $ordenGrados = [
+            'Primero' => 1,
+            'Segundo' => 2,
+            'Tercero' => 3,
+            'Cuarto' => 4,
+            'Quinto' => 5,
+            'Sexto' => 6,
+            'Septimo' => 7,
+            'Octavo' => 8,
+            'Noveno' => 9,
+            '1er Bachillerato' => 10,
+            '2do Bachillerato' => 11,
+        ];
 
-        return response()->json($grado);
+        $grados = Grado::with('seccion')
+            ->where('estado', 'ACTIVO')
+            ->get()
+            ->sortBy(function ($grado) use ($ordenGrados) {
+                return $ordenGrados[$grado->grado] ?? 99;
+            })
+            ->values();
+
+        return response()->json($grados);
     }
 
     public function showGradoXturnoCiclo1(Request $request)
