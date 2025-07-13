@@ -109,6 +109,37 @@ class PermisosController extends Controller
         return response()->json($permisos);
     }
 
+    public function getPermisosCountByDocente(Request $request)
+    {
+        $docente = $request->input('docente');
+
+        $grados = DocenteMateriaGrado::with([
+            'docente.persona',
+            'grado'
+        ])
+            ->when($docente, function ($query) use ($docente) {
+                $query->whereHas('docente.persona', function ($q) use ($docente) {
+                    $q->where('id_persona', "$docente");
+                });
+            })
+            ->pluck('id_grado')
+            ->unique()
+            ->values();
+
+
+        $permisos = Permisos::with([
+            'historialestudiante.grado',
+        ])
+            ->when(!empty($grados), function ($query) use ($grados) {
+                $query->whereHas('historialestudiante.grado', function ($q) use ($grados) {
+                    $q->whereIn('id_grado', $grados);
+                });
+            })
+            ->count();
+
+        return response()->json(['permisos' => $permisos]);
+    }
+
     /**
      * Store a newly created resource in storage.
      *

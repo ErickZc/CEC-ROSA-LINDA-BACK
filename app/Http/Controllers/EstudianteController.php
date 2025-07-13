@@ -863,8 +863,6 @@ class EstudianteController extends Controller
             return response()->json(['error' => 'Responsable es obligatorio'], 400);
         }
 
-        $anioActual = date('Y');
-
         $estudiantes = Estudiante::with([
             'responsableEstudiantes.responsable',
             'responsableEstudiantes.estudiante',
@@ -876,6 +874,32 @@ class EstudianteController extends Controller
                 $query->where('id_persona', $responsable);
             })
             ->whereHas('historialEstudianteActual')
+            ->get();
+
+        return response()->json($estudiantes);
+    }
+
+    public function allEstudiantesByResponsable(Request $request)
+    {
+        $responsable = $request->input('responsable');
+
+        if (!$responsable) {
+            return response()->json(['error' => 'Responsable es obligatorio'], 400);
+        }
+
+        $estudiantes = Estudiante::with([
+            'responsableEstudiantes.responsable',
+            'responsableEstudiantes.estudiante',
+            'persona',
+            'historialEstudianteByFechaActual',
+            'historialEstudianteByFechaActual.grado',
+            'historialEstudianteByFechaActual.grado.seccion'
+        ])
+            ->where('estado', 'ACTIVO')
+            ->whereHas('responsableEstudiantes.responsable', function ($query) use ($responsable) {
+                $query->where('id_persona', $responsable);
+            })
+            ->whereHas('historialEstudianteByFechaActual')
             ->get();
 
         return response()->json($estudiantes);

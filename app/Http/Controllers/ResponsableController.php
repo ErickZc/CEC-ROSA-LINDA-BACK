@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ResponsableController extends Controller
 {
-    public function allEstudiantes()
+    public function allResponsables()
     {
         return Responsable::all();
     }

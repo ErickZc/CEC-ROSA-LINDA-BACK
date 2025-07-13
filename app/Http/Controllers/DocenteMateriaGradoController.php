@@ -1,13 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Support\Facades\DB;
-use App\Models\Usuario;
-use App\Models\Persona;
+use App\Models\HistorialEstudiante;
 use App\Models\Docente;
 use App\Models\DocenteMateriaGrado;
-use App\Models\Materia;
-use App\Models\Grado;
 
 use Illuminate\Http\Request;
 
@@ -15,7 +13,7 @@ class DocenteMateriaGradoController extends Controller
 {
     public function busquedaDocente(Request $request)
     {
-        $nombreCompleto = $request->buscador; 
+        $nombreCompleto = $request->buscador;
 
         $docentes = Docente::with('persona')
             ->where('estado', 'ACTIVO')
@@ -163,7 +161,6 @@ class DocenteMateriaGradoController extends Controller
         ], 200);
     }
 
-
     public function AsignarMateriaDocenteCiclo3(Request $request)
     {
         $id_docente = $request->id_docente;
@@ -231,7 +228,6 @@ class DocenteMateriaGradoController extends Controller
             'message' => 'Materias asignadas correctamente al docente.'
         ], 200);
     }
-
 
     public function AsignarMateriaDocenteCiclo4(Request $request)
     {
@@ -381,7 +377,6 @@ class DocenteMateriaGradoController extends Controller
             return response()->json([
                 'message' => 'El docente fue desvinculado correctamente.'
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Ocurrió un error al intentar desvincular al docente.'
@@ -389,5 +384,47 @@ class DocenteMateriaGradoController extends Controller
         }
     }
 
+    public function getDMDashboardCountsByDocente(Request $request)
+    {
+        $docenteId = $request->input('docente');
+        $anioActual = date('Y');
 
+        $asignaciones = DocenteMateriaGrado::with(['grado.estudiante'])
+            ->when($docenteId, function ($query) use ($docenteId) {
+                $query->whereHas('docente.persona', function ($q) use ($docenteId) {
+                    $q->where('id_persona', $docenteId);
+                });
+            })
+            ->get();
+
+        $materiasCount = $asignaciones->pluck('materia.id')->unique()->count();
+
+        $grados = $asignaciones->pluck('grado')->unique('id_grado');
+        $gradosCount = $asignaciones->pluck('id_grado')->unique()->count();
+
+        $gradoIds = $grados->pluck('id_grado');
+        $estudiantesCount = HistorialEstudiante::where('anio', $anioActual)->whereIn('id_grado', $gradoIds)->distinct('id_estudiante')->count();
+
+
+        return response()->json([
+            'materias' => $materiasCount,
+            'grados' => $gradosCount,
+            'estudiantes' => $estudiantesCount
+        ]);
+    }
+
+    public function getMateriasByDocente(Request $request)
+    {
+        $docenteId = $request->input('docente');
+
+        $asignaciones = DocenteMateriaGrado::with(['grado', 'grado.seccion', 'materia'])
+            ->when($docenteId, function ($query) use ($docenteId) {
+                $query->whereHas('docente.persona', function ($q) use ($docenteId) {
+                    $q->where('id_persona', $docenteId);
+                });
+            })
+            ->get();
+
+        return response()->json($asignaciones);
+    }
 }

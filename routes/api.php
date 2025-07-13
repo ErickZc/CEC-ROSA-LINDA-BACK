@@ -30,6 +30,7 @@ use App\Http\Controllers\HistorialEstudianteController;
 use App\Http\Controllers\AgentAIController;
 use App\Http\Controllers\RangoFechaNotaController;
 use App\Http\Controllers\NotaAccesoController;
+use App\Models\Responsable;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,6 +117,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/ciclos/all', [CicloController::class, 'allCiclos']);
     Route::get('/roles/all', [RolUsuarioController::class, 'allRoles']);
     Route::get('/historiales/all', [HistorialEstudianteController::class, 'allHistorial']);
+    Route::get('/responsables/all', [ResponsableController::class, 'allResponsables']);
 
     //Reportes
     Route::get('/usuariosPorRol', [UsuarioController::class, 'usuariosPorRol']);
@@ -141,14 +143,15 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::post('/admin/AsignarMateriaDocenteCiclo2', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo2']);
     Route::post('/admin/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
     Route::post('/admin/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
-
+   
     // Rutas para permisos
     Route::resource('/permisos', PermisosController::class)->except(['show']);
     Route::post('/permisos/permisosPorResponsable', [PermisosController::class, 'getPermisosByResponsable']);
     Route::post('/permisos/permisosPorDocente', [PermisosController::class, 'getPermisosByDocente']);
     Route::post('/permisos/permisosPorCoordinador', [PermisosController::class, 'getPermisosByCoordinador']);
     Route::post('/estudiantes/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesByResponsable']);
-    
+    Route::post('/estudiantes/estudiantesLstPorResponsable', [EstudianteController::class, 'allEstudiantesByResponsable']);
+
     // Rutas para la gestión de notas
     Route::get('/notas', [PeriodoController::class, 'index']);
     Route::get('/notas/Data', [NotaController::class, 'getFormularioData']);
@@ -181,7 +184,9 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/admin/rendimientoEstudiantil', [EstudianteController::class, 'rendimientoEstudiantil']);
     Route::get('/responsable/estudiantesPorResponsable', [EstudianteController::class, 'estudiantesPorResponsable']);
    
-
+    Route::post('/docente/getDMDashboardCountsByDocente', [DocenteMateriaGradoController::class, 'getDMDashboardCountsByDocente']);
+    Route::post('/docente/getPermisosCountByDocente', [PermisosController::class, 'getPermisosCountByDocente']); 
+    Route::post('/docente/getMateriasByDocente', [DocenteMateriaGradoController::class, 'getMateriasByDocente']); 
     //generar boletas
     Route::get('/reportes_boletaFinal/{id_estudiante}/{anio}', [ReportesController::class, 'generarBoletaXestudiante']);
     Route::get('/reportes_boletaGrado/{id_grado}/{anio}', [ReportesController::class, 'generarBoletasXGrado']);

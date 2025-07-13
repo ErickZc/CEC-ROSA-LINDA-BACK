@@ -38,6 +38,15 @@ class Estudiante extends Model
             ->where('anio', $anioActual)
             ->where('estado', 'CURSANDO');
     }
+
+    public function historialEstudianteByFechaActual()
+    {
+        $anioActual = date('Y');
+
+        return $this->hasOne(HistorialEstudiante::class, 'id_estudiante', 'id_estudiante')
+            ->where('anio', $anioActual);
+    }
+
     public function seccion()
     {
         return $this->belongsTo(Seccion::class, 'id_seccion');
