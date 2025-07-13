@@ -268,6 +268,113 @@ class EstudianteController extends Controller
         ]);  
     }
 
+    public function enviarNotasAllGradoPeriodoCiclo(Request $request)
+    {
+        setlocale(LC_TIME, 'es_ES.UTF-8');
+        Carbon::setLocale('es');
+        $date = Carbon::now('America/El_Salvador');
+
+        $periodo = $request->id_periodo;
+        $ciclo = $request->id_ciclo;
+
+        // Validar que se reciban los datos necesarios
+        if (!$ciclo || !$periodo ) {
+            return response()->json(['error' => 'Todos los campos son obligatorios'], 400);
+        }
+
+        $resultados = DB::select("CALL obtener_notas_x_periodo_ciclo(?, ?)", [
+            $periodo,
+            $ciclo
+        ]);
+
+        if (empty($resultados)) {
+            return response()->json(['message' => 'No hay datos disponibles.'], 404);
+        }
+    
+        $agrupado = [];
+
+        foreach ($resultados as $fila) {
+            $key = $fila->correo_responsable . '|' . $fila->nombre . ' ' . $fila->apellido;
+
+            if (!isset($agrupado[$key])) {
+                $agrupado[$key] = [
+                    'responsable' => $fila->nombre_responsable . ' ' . $fila->apellido_responsable,
+                    'correo' => $fila->correo_responsable,
+                    'estudiante' => $fila->nombre . ' ' . $fila->apellido,
+                    'grado' => $fila->grado,
+                    'seccion' => $fila->seccion,
+                    'notas' => [],
+                ];
+            }
+
+            foreach ($fila as $campo => $valor) {
+                if (!in_array($campo, ['nombre_responsable', 'apellido_responsable', 'correo_responsable', 'nombre', 'apellido', 'grado', 'seccion'])) {
+                    $agrupado[$key]['notas'][$campo] = $valor;
+                }
+            }
+        }
+
+        // Enviar correo a cada padre
+        foreach ($agrupado as $info) {
+            try {
+                $htmlContent = '
+                    <div style="font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #1f2937; background-color: #f9fafb;">
+                        <div style="margin-bottom: 20px;">
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                Estimado/a <strong>' . $info['responsable'] . '</strong>,
+                            </p>
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                Esperamos que se encuentre muy bien. Por medio de este mensaje, queremos compartirle un resumen detallado del desempeño académico de su hijo/a <strong>' . $info['estudiante'] . '</strong>, correspondiente al grado <strong>' . $info['grado'] . ' ' . $info['seccion'] . '</strong>, durante el periodo actual.
+                            </p>
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                A continuación encontrará el detalle de calificaciones por asignatura.
+                            </p>
+                        </div>
+
+                        <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead style="background-color: #4f46e5; color: white;">
+                                    <tr>
+                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Asignatura</th>
+                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Promedio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>';
+                                foreach ($info['notas'] as $materia => $nota) {
+                                    $htmlContent .= '
+                                    <tr style="background-color: #f9fafb;">
+                                        <td style="padding: 12px; border: 1px solid #e5e7eb;">' . htmlspecialchars($materia) . '</td>
+                                        <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">' . number_format($nota, 2) . '</td>
+                                    </tr>';
+                                }
+                                $htmlContent .= '
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p style="margin-top: 30px; font-size: 14px; color: #4b5563;">
+                            Este mensaje ha sido generado automáticamente el día <strong>' . $date->translatedFormat('j \\d\\e F \\d\\e Y') . '</strong>. 
+                            Si tiene alguna duda o desea conversar más a detalle sobre el rendimiento académico de su hijo/a, no dude en comunicarse con el equipo docente.
+                        </p>
+
+                        <p style="margin-top: 10px; font-size: 14px; color: #4b5563;">
+                            Le agradecemos por su atención y continuo apoyo en el proceso educativo.
+                        </p>
+                    </div>';
+
+                Mail::html($htmlContent, function ($message) use ($info, $date) {
+                    $message->to($info['correo'])
+                            ->subject("Notas de {$info['estudiante']} - " . $date->translatedFormat('F Y'));
+                });
+            } catch (\Exception $e) {
+                Log::error("Error al enviar correo a " . $info['correo'] . ": " . $e->getMessage());
+            }
+        }
+
+        return response()->json(['message' => 'Correos enviados con éxito.']);
+
+    }
+
     public function enviarNotasGradoResponsableFiltrado(Request $request)
     {
         setlocale(LC_TIME, 'es_ES.UTF-8');
@@ -565,6 +672,50 @@ class EstudianteController extends Controller
             return response()->json([
                 'estudiante_id' => $estudiante->id_estudiante,
                 'responsables' => $responsables
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Ocurrió un error inesperado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function obtenerEstudiantePorNombre(Request $request)
+    {
+        $nombreCompleto = trim($request->nombre_completo);
+
+        if (!$nombreCompleto) {
+            return response()->json([
+                'error' => 'El nombre es un campo obligatorio.'
+            ], 400);
+        }
+
+        try {
+            // Buscar al estudiante por nombre completo y grado en el año actual
+
+            $estudiantes = DB::select("
+                SELECT e.id_estudiante, p.nombre, p.apellido, e.correo, p.direccion, e.estado, p.genero, g.grado, e.nie, s.seccion
+                FROM Persona p 
+                INNER JOIN Estudiante e ON p.id_persona = e.id_persona
+                INNER JOIN Historial_Estudiante he ON he.id_estudiante = e.id_estudiante
+                INNER JOIN Grado g ON g.id_grado = he.id_grado
+                INNER JOIN Seccion s ON g.id_seccion = s.id_seccion
+                WHERE CONCAT(p.nombre, ' ', p.apellido) LIKE ? 
+                    AND e.estado = 'ACTIVO' 
+                    AND g.estado = 'ACTIVO' 
+                    AND s.estado = 'ACTIVO' 
+                    AND he.anio = YEAR(NOW())
+            ", ['%' . $nombreCompleto . '%']);
+
+            if (!$estudiantes) {
+                return response()->json([
+                    'error' => 'No se encontraron estudiantes con ese nombre cursando el año actual.'
+                ], 404);
+            }
+
+            return response()->json([
+                'estudiantes' => $estudiantes,
             ]);
 
         } catch (\Exception $e) {

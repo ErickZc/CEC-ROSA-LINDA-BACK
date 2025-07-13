@@ -162,8 +162,10 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/estudiantes/notasNew/{idGrado}/{idMateria}/{idSeccion}', [EstudianteController::class, 'estudiantesConNotasFiltradosNew']);
     Route::get('/estudiantes/notas/enviarNotasAllGrado', [EstudianteController::class, 'enviarNotasAllGrado']);
     Route::post('/estudiantes/notas/enviarNotasAllGradoResponsable', [EstudianteController::class, 'enviarNotasAllGradoResponsable']);
+    Route::post('/estudiantes/notas/enviarNotasAllGradoPeriodoCiclo1', [EstudianteController::class, 'enviarNotasAllGradoPeriodoCiclo1']);
     Route::post('/estudiantes/notas/enviarNotasGradoResponsableFiltrado', [EstudianteController::class, 'enviarNotasGradoResponsableFiltrado']);
     Route::get('/estudiantes/responsable/obtenerResponsablePorNombreCompleto', [EstudianteController::class, 'obtenerResponsablePorNombreCompleto']);
+    Route::get('/estudiantes/responsable/obtenerEstudiantePorNombre', [EstudianteController::class, 'obtenerEstudiantePorNombre']);
 
     Route::match(['put', 'post'], '/notas/{id?}', [NotaController::class, 'update']);
 
