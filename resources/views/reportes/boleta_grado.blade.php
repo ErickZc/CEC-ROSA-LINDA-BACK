@@ -95,9 +95,15 @@
                         $p4 = $boleta['isBachillerato'] ? $registros->firstWhere('id_periodo', 4) : null;
 
                         $totalPeriodos = $boleta['isBachillerato'] ? 4 : 3;
-                        $sumaNotas = ($p1?->promedio ?? 0) + ($p2?->promedio ?? 0) + ($p3?->promedio ?? 0) + ($boleta['isBachillerato'] ? ($p4?->promedio ?? 0) : 0);
+                        $sumaNotas = 
+                            ($p1?->promedio ?? 0) + 
+                            ($p2?->promedio ?? 0) + 
+                            ($p3?->promedio ?? 0) + 
+                            ($boleta['isBachillerato'] ? ($p4?->promedio ?? 0) : 0);
+                            
                         $promedio = $sumaNotas / $totalPeriodos;
-                        $estado = $promedio >= 5 ? 'Aprobado' : 'Reprobado';
+                        $minimoAprobacion = $boleta['isBachillerato'] ? 6 : 5;
+                        $estado = $promedio >= $minimoAprobacion ? 'Aprobado' : 'Reprobado';
                     @endphp
                     <tr>
                         <td>{{ $materiaNombre }}</td>
