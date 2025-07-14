@@ -52,6 +52,23 @@ class EstudianteController extends Controller
         $enviados = 0;
         $no_enviados = [];
 
+        $promedioFinal = 0;
+
+        $id_ciclo = DB::table('Materia')
+            ->where('nombre_materia', $materia)
+            ->where('estado', $estado)
+            ->value('id_ciclo');
+
+        if ($id_ciclo === 1 || $id_ciclo === 2 || $id_ciclo === 3) {
+            $promedioFinal = 5.0; // Promedio mínimo para aprobar en los ciclos 1, 2 y 3 (BASICA)
+            $promedioFinal = floatval($promedioFinal);
+        }else if ($id_ciclo === 4 ) {
+            $promedioFinal = 6.0; // Promedio mínimo para aprobar en los ciclos 4 (BACHILLERATO)
+            $promedioFinal = floatval($promedioFinal);
+        } else {
+            return response()->json(['error' => 'Ciclo no válido'], 400);
+        }
+
         $anioActual = date('Y');
         
         // Validar que se reciban los datos necesarios
@@ -170,10 +187,22 @@ class EstudianteController extends Controller
 
                         foreach ($notas as $n) {
 
-                            
-                            $promedioRaw = $n['promedio'] ?? null;
+                            $act1 = floatval($n['actividad1'] ?? 0);
+                            $act2 = floatval($n['actividad2'] ?? 0);
+                            $act3 = floatval($n['actividad3'] ?? 0);
+                            $actividadCotidiana = ($act1 + $act2 + $act3) / 3;
 
-                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
+                            $actividadInt = floatval($n['actividadInt'] ?? 0);
+                            $examen = floatval($n['examen'] ?? 0);
+
+                            $promedioCalculado = round(
+                                ($actividadCotidiana * 0.35) + ($actividadInt * 0.35) + ($examen * 0.30),
+                                2
+                            );
+                            
+                            //$promedioRaw = floatval($n['promedio']) ?? 0.0;
+
+                                if ($promedioCalculado >= $promedioFinal) {
                                     $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
                                 } else {
                                     $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
@@ -186,7 +215,7 @@ class EstudianteController extends Controller
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
-                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . number_format($promedioCalculado, 2, '.', '') . '</strong></td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
                                 </tr>';
                         }
@@ -275,6 +304,11 @@ class EstudianteController extends Controller
         $date = Carbon::now('America/El_Salvador');
 
         $periodo = $request->id_periodo;
+
+        $texto_periodo = DB::table('Periodo')
+            ->where('id_periodo', $periodo)
+            ->value('periodo');
+
         $ciclo = $request->id_ciclo;
 
         // Validar que se reciban los datos necesarios
@@ -331,23 +365,32 @@ class EstudianteController extends Controller
                             </p>
                         </div>
 
-                        <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                                <thead style="background-color: #4f46e5; color: white;">
-                                    <tr>
-                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Asignatura</th>
-                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Promedio</th>
+                        <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; text-align: center;">
+                                <thead>
+                                    <tr style="background-color:  #000039;color:#ffffff;  text-align: center;" >
+                                        <th style="padding:14px 12px;font-weight:600; font-size: 20px;" colspan="8"> Promedio Final - ' . $texto_periodo .'</th>
+                                    </tr>
+                                    <tr style="background-color: #000039; color: #ffffff;">';
+
+                        foreach ($info['notas'] as $materia => $nota) {
+                            $htmlContent .= '
+                                        <th style="padding: 14px 12px; font-weight: 600;">' . htmlspecialchars($materia) . '</th>';
+                        }
+
+                        $htmlContent .= '
                                     </tr>
                                 </thead>
-                                <tbody>';
-                                foreach ($info['notas'] as $materia => $nota) {
-                                    $htmlContent .= '
-                                    <tr style="background-color: #f9fafb;">
-                                        <td style="padding: 12px; border: 1px solid #e5e7eb;">' . htmlspecialchars($materia) . '</td>
-                                        <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">' . number_format($nota, 2) . '</td>
-                                    </tr>';
-                                }
-                                $htmlContent .= '
+                                <tbody>
+                                    <tr style="background-color:#fff; color: #374151; text-decoration: overline; font-weight: bold; ">';
+
+                        foreach ($info['notas'] as $materia => $nota) {
+                            $htmlContent .= '
+                                        <td style="padding: 12px 12px; border-top: 1px solid #e5e7eb;">' . number_format($nota, 2) . '</td>';
+                        }
+
+                        $htmlContent .= '
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -391,6 +434,23 @@ class EstudianteController extends Controller
         $estado = 'ACTIVO';
         $enviados = 0;
         $no_enviados = [];
+
+        $promedioFinal = 0;
+
+        $id_ciclo = DB::table('Materia')
+            ->where('nombre_materia', $materia)
+            ->where('estado', $estado)
+            ->value('id_ciclo');
+
+        if ($id_ciclo === 1 || $id_ciclo === 2 || $id_ciclo === 3) {
+            $promedioFinal = 5.0; // Promedio mínimo para aprobar en los ciclos 1, 2 y 3 (BASICA)
+            //$promedioFinal = floatval($promedioFinal);
+        }else if ($id_ciclo === 4 ) {
+            $promedioFinal = 6.0; // Promedio mínimo para aprobar en los ciclos 4 (BACHILLERATO)
+            //$promedioFinal = floatval($promedioFinal);
+        } else {
+            return response()->json(['error' => 'Ciclo no válido'], 400);
+        }
 
         $anioActual = date('Y');
         
@@ -493,10 +553,22 @@ class EstudianteController extends Controller
 
                         foreach ($notas as $n) {
 
-                            
-                            $promedioRaw = $n['promedio'] ?? null;
+                            $act1 = floatval($n['actividad1'] ?? 0);
+                            $act2 = floatval($n['actividad2'] ?? 0);
+                            $act3 = floatval($n['actividad3'] ?? 0);
+                            $actividadCotidiana = ($act1 + $act2 + $act3) / 3;
 
-                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
+                            $actividadInt = floatval($n['actividadInt'] ?? 0);
+                            $examen = floatval($n['examen'] ?? 0);
+
+                            $promedioCalculado = round(
+                                ($actividadCotidiana * 0.35) + ($actividadInt * 0.35) + ($examen * 0.30),
+                                2
+                            );
+                            
+                            //$promedioRaw = floatval($n['promedio']) ?? 0.0;
+
+                                if ($promedioCalculado >= $promedioFinal) {
                                     $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
                                 } else {
                                     $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
@@ -509,7 +581,7 @@ class EstudianteController extends Controller
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
-                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . number_format($promedioCalculado, 2, '.', '') . '</strong></td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
                                 </tr>';
                         }
