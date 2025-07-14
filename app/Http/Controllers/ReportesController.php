@@ -473,7 +473,7 @@ class ReportesController extends Controller
             })
             ->paginate($perPage);
 
-        $resultado = $estudiantes->getCollection()->map(function ($historial) {
+        $estudiantes->getCollection()->transform(function ($historial) {
             return [
                 'id_estudiante' => $historial->estudiante->id_estudiante ?? null,
                 'nie' => $historial->estudiante->nie ?? null,
@@ -483,13 +483,12 @@ class ReportesController extends Controller
             ];
         });
 
-        $estudiantes->setCollection($resultado);
-
         return response()->json([
             'message' => 'Consulta realizada correctamente.',
             'estudiantes' => $estudiantes
         ]);
     }
+
 
 
     public function generarListadoEstudiantesPorGradoSeccion($id_grado, $seccion)
