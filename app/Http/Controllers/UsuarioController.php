@@ -16,7 +16,7 @@ class UsuarioController extends Controller
 {
     public function allUsuarios()
     {
-        return Usuario::all();
+        return Usuario::select('correo', 'usuario')->get();
     }
 
     public function index(Request $request,  $idRol)
@@ -35,6 +35,34 @@ class UsuarioController extends Controller
                     });
             })
             ->paginate(10);
+
+        return response()->json($usuarios);
+    }
+
+    public function getAdminUsers()
+    {
+        $usuarios = Usuario::select('id_usuario', 'usuario', 'correo','id_persona','id_rol', )
+            ->with([
+                'rol:id_rol',
+                'persona:id_persona,nombre,apellido,genero,direccion,telefono'
+            ])
+            ->where('estado', 'ACTIVO')
+            ->where('id_rol', 1)
+            ->get();
+
+        return response()->json($usuarios);
+    }
+
+    public function getCoordinadoresUsers()
+    {
+        $usuarios = Usuario::select('id_usuario', 'usuario', 'correo','id_persona','id_rol', )
+            ->with([
+                'rol:id_rol',
+                'persona:id_persona,nombre,apellido,genero,direccion,telefono'
+            ])
+            ->where('estado', 'ACTIVO')
+            ->where('id_rol', 3)
+            ->get();
 
         return response()->json($usuarios);
     }
@@ -66,8 +94,8 @@ class UsuarioController extends Controller
             $persona = Persona::create([
                 'nombre'    => $validated['nombre'],
                 'apellido'  => $validated['apellido'],
-                'direccion' => $validated['direccion'] ?? null, 
-                'telefono'  => $validated['telefono'] ?? null, 
+                'direccion' => $validated['direccion'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
                 'genero'    => $validated['genero'],
             ]);
 
@@ -79,7 +107,7 @@ class UsuarioController extends Controller
                 'password'  => Hash::make($validated['password']),
                 'correo'    => $validated['correo'],
                 'id_rol'    => $validated['id_rol'],
-                'id_persona'=> $persona->id_persona,
+                'id_persona' => $persona->id_persona,
             ]);
 
             DB::commit();
@@ -88,7 +116,6 @@ class UsuarioController extends Controller
                 'message' => 'Usuario creado correctamente',
                 'data' => $usuario
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -97,12 +124,12 @@ class UsuarioController extends Controller
             ], 500);
         }
     }
-  
-    
 
-     public function update(Request $request, $id)
-     {
-         $validated = $request->validate([
+
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
             'nombre' => 'required|string',
             'apellido' => 'required|string',
             'direccion' => 'nullable|string',
@@ -136,7 +163,7 @@ class UsuarioController extends Controller
             'message' => 'Usuario y persona actualizados correctamente',
             'data' => $usuario->load('persona', 'rol'),
         ]);
-     }
+    }
 
 
     public function destroy($id)
@@ -169,7 +196,6 @@ class UsuarioController extends Controller
                 'message' => 'Usuarios agrupados por rol obtenidos con éxito',
                 'data' => $result
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener los usuarios por rol',
@@ -187,7 +213,6 @@ class UsuarioController extends Controller
                 'message' => 'Total de usuarios obtenido con éxito',
                 'data' => ['total' => $total]
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener el total de usuarios',
@@ -195,7 +220,4 @@ class UsuarioController extends Controller
             ], 500);
         }
     }
-
-
-
 }

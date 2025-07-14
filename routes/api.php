@@ -238,3 +238,6 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 
 
 Route::post('/estudiantes/notas/enviarNotasAllGradoPeriodoCiclo1', [EstudianteController::class, 'enviarNotasAllGradoPeriodoCiclo']);
+Route::get('/usuarios/getAdminUsers', [UsuarioController::class, 'getAdminUsers']);
+Route::get('/usuarios/getCoordinadoresUsers', [UsuarioController::class, 'getCoordinadoresUsers']);
+Route::get('/getEstudentUsers', [EstudianteController::class, 'getEstudentUsers']);

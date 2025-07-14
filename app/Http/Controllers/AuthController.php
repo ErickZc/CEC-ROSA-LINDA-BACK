@@ -86,7 +86,6 @@ class AuthController extends Controller
 
          return response()->json([
             'message' => 'Inicio de sesión exitoso',
-            'usuario' => $usuario,
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
