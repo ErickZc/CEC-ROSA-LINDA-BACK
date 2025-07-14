@@ -79,9 +79,10 @@
             <thead>
                 <tr>
                     <th>Componente plan estudio</th>
-                    @for($i = 1; $i <= ($boleta['isBachillerato'] ? 4 : 3); $i++)
-                        <th>Periodo {{ $i }}</th>
-                    @endfor
+                    <th>Periodo 1</th>
+                    <th>Periodo 2</th>
+                    <th>Periodo 3</th>
+                    <th>Periodo 4</th>
                     <th>Nota Final</th>
                     <th>Estado</th>
                 </tr>
@@ -92,16 +93,16 @@
                         $p1 = $registros->firstWhere('id_periodo', 1);
                         $p2 = $registros->firstWhere('id_periodo', 2);
                         $p3 = $registros->firstWhere('id_periodo', 3);
-                        $p4 = $boleta['isBachillerato'] ? $registros->firstWhere('id_periodo', 4) : null;
+                        $p4 = $registros->firstWhere('id_periodo', 4);
 
-                        $totalPeriodos = $boleta['isBachillerato'] ? 4 : 3;
+                        
                         $sumaNotas = 
                             ($p1?->promedio ?? 0) + 
                             ($p2?->promedio ?? 0) + 
                             ($p3?->promedio ?? 0) + 
-                            ($boleta['isBachillerato'] ? ($p4?->promedio ?? 0) : 0);
+                            ($p4?->promedio ?? 0) ;
                             
-                        $promedio = $sumaNotas / $totalPeriodos;
+                        $promedio = $sumaNotas / 4;
                         $minimoAprobacion = $boleta['isBachillerato'] ? 6 : 5;
                         $estado = $promedio >= $minimoAprobacion ? 'Aprobado' : 'Reprobado';
                     @endphp
@@ -110,16 +111,14 @@
                         <td>{{ number_format($p1?->promedio ?? 0, 1) }}</td>
                         <td>{{ number_format($p2?->promedio ?? 0, 1) }}</td>
                         <td>{{ number_format($p3?->promedio ?? 0, 1) }}</td>
-                        @if($boleta['isBachillerato'])
-                            <td>{{ number_format($p4?->promedio ?? 0, 2) }}</td>
-                        @endif
+                        <td>{{ number_format($p4?->promedio ?? 0, 1) }}</td>
                         <td>{{ number_format($promedio, 1) }}</td>
                         <td>{{ $estado }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $boleta['isBachillerato'] ? 6 : 5 }}" style="text-align: center;">No hay notas registradas</td>
-                        <td colspan="1">-</td>
+                        <td colspan="6" style="text-align: center;">No hay notas registradas</td>
+                        <td>-</td>
                     </tr>
                 @endforelse
             </tbody>

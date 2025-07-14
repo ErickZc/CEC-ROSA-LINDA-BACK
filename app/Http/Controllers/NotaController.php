@@ -327,5 +327,32 @@ class NotaController extends Controller
         return response()->json($grados);
     }
 
+    public function verificarEstudiantesAsignados(Request $request)
+    {
+        $id_persona = $request->input('id_persona');
+
+        if (!$id_persona) {
+            return response()->json(['message' => 'Debe proporcionar el ID del responsable'], 400);
+        }
+
+        // Buscar al responsable
+        $responsable = Responsable::where('id_persona', $id_persona)->first();
+        if (!$responsable) {
+            return response()->json(['message' => 'Responsable no encontrado'], 404);
+        }
+
+        // Buscar estudiantes asignados activos
+        $estudiantes = ResponsableEstudiante::where('id_responsable', $responsable->id_responsable)
+            ->where('estado', 'ACTIVO')
+            ->with(['estudiante.persona'])
+            ->get();
+
+        /*if ($estudiantes->isEmpty()) {
+            return response()->json(['message' => 'No hay estudiantes asignados a este responsable'], 404);
+        }*/
+
+        return response()->json($estudiantes);
+    }
+
 
 }

@@ -234,6 +234,10 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
         Route::post('/coordinador/AsignarMateriaDocenteCiclo2', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo2']);
         Route::post('/coordinador/AsignarMateriaDocenteCiclo3', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo3']);
         Route::post('/coordinador/AsignarMateriaDocenteCiclo4', [DocenteMateriaGradoController::class, 'AsignarMateriaDocenteCiclo4']);
+
+
+    Route::get('/responsable/estudiantes-asignados', [NotaController::class, 'verificarEstudiantesAsignados']);
+
 });
 
 
