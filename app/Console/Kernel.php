@@ -9,6 +9,7 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\EnviarNotificacionesInasistencias::class,
+        \App\Console\Commands\EnviarNotificacionesNotas::class,
     ];
 
     /**
@@ -26,6 +27,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('inasistencias:enviar')
             ->weekdays()
             ->at('14:10');
+
+        $schedule->command('notas:enviar')
+            ->weekdays()
+            ->at('08:00');
     }
 
     /**

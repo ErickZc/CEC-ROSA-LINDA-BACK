@@ -39,7 +39,7 @@ class EnviarNotificacionesInasistencias extends Command
     public function handle()
     {
         $this->inasistenciaService->enviarCorreos();
-        Log::info("Comando automático ejecutado a las " . now());
+        Log::info("[ENVÍO DE INASISTENCIAS] Comando automático ejecutado a las " . now());
         $this->info('Correos encolados correctamente');
     }
 }
