@@ -192,7 +192,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/reportes_boletaGrado/{id_grado}/{anio}', [ReportesController::class, 'generarBoletasXGrado']);
     Route::get('/boletas/grado/{id_grado}', [ReportesController::class, 'mostrarBoletaNotas']);
     Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
-    Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGradoSeccion']);
+    //Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGradoSeccion']);
     Route::get('/reportes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'generarListadoEstudiantesPorGradoSeccion']);
 
     // Rutas para la gestión de rango de fechas de los periodos
@@ -244,3 +244,4 @@ Route::post('/estudiantes/notas/enviarNotasAllGradoPeriodoCiclo1', [EstudianteCo
 Route::get('/usuarios/getAdminUsers', [UsuarioController::class, 'getAdminUsers']);
 Route::get('/usuarios/getCoordinadoresUsers', [UsuarioController::class, 'getCoordinadoresUsers']);
 Route::get('/getEstudentUsers', [EstudianteController::class, 'getEstudentUsers']);
+Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGrado']);

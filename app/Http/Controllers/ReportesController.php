@@ -653,6 +653,34 @@ class ReportesController extends Controller
         ])->stream('boletas_grado_' . $id_grado . '_' . $anio . '.pdf');
     }
 
+    public function getEstudiantesPorGrado($id_grado, $seccion)
+    {
+        $anioActual = date('Y');
+
+        $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
+            ->where('id_grado', $id_grado)
+            ->where('anio', $anioActual)
+            ->whereHas('grado.seccion', function($query) use ($seccion) {
+                $query->where('seccion', $seccion);
+            })
+            ->get();
+
+        $result = $estudiantes->map(function($historial) {
+            return [
+                'id_estudiante' => $historial->estudiante->id_estudiante,
+                'nie' => $historial->estudiante->nie,
+                'nombre' => $historial->estudiante->persona->nombre,
+                'apellido' => $historial->estudiante->persona->apellido,
+                'estado' => $historial->estado,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Consulta realizada correctamente.',
+            'total' => $result->count(),
+            'estudiantes' => $result
+        ]);
+    }
 
     public function getEstudiantesPorGradoSeccion(Request $request, $id_grado, $seccion)
     {
