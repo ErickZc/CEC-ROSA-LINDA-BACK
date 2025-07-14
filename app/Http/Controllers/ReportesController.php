@@ -242,6 +242,10 @@ class ReportesController extends Controller
         });
 
         $nombreArchivo = strtoupper(urldecode("Notas_{$grado->grado}_{$grado->seccion->seccion}_{$materia->nombre_materia}_{$nombrePeriodo}_{$grado->turno}")) . ".pdf";
+        $nombreGrado = strtolower($grado->grado);
+        $notaMinima = str_contains($nombreGrado, 'bachillerato')
+            ? config('app.nota_minima_media')
+            : config('app.nota_minima_basica');
 
         $data = [
             'grado' => $grado->grado,
@@ -253,7 +257,7 @@ class ReportesController extends Controller
             'institucion' => 'Complejo Educativo Col. Rosa Linda',
             'anio' => Carbon::now()->year,
             'periodo' => $nombrePeriodo,
-            'nota_minima' => 7
+            'nota_minima' => $notaMinima
         ];
 
         $pdf = Pdf::loadView('reportes.reporteNotas', $data);
@@ -457,18 +461,57 @@ class ReportesController extends Controller
     }
 
 
-    public function getEstudiantesPorGradoSeccion($id_grado, $seccion)
+    public function getEstudiantesPorGradoSeccion(Request $request, $id_grado, $seccion)
     {
+        $perPage = $request->input('per_page', 10);
+
         $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
             ->where('id_grado', $id_grado)
+            ->where('estado', 'CURSANDO')
+            ->whereHas('grado.seccion', function ($query) use ($seccion) {
+                $query->where('seccion', $seccion);
+            })
+            ->paginate($perPage);
+
+        $resultado = $estudiantes->getCollection()->map(function ($historial) {
+            return [
+                'id_estudiante' => $historial->estudiante->id_estudiante ?? null,
+                'nie' => $historial->estudiante->nie ?? null,
+                'nombre' => $historial->estudiante->persona->nombre ?? null,
+                'apellido' => $historial->estudiante->persona->apellido ?? null,
+                'estado' => $historial->estado,
+            ];
+        });
+
+        $estudiantes->setCollection($resultado);
+
+        return response()->json([
+            'message' => 'Consulta realizada correctamente.',
+            'estudiantes' => $estudiantes
+        ]);
+    }
+
+
+    public function generarListadoEstudiantesPorGradoSeccion($id_grado, $seccion)
+    {
+        if (!$id_grado || !$seccion) {
+            return abort(400, 'Debe proporcionar un grado y una sección.');
+        }
+
+        $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
+            ->where('id_grado', $id_grado)
+            ->where('estado', 'CURSANDO')
             ->whereHas('grado.seccion', function($query) use ($seccion) {
                 $query->where('seccion', $seccion);
             })
             ->get();
 
-        $result = $estudiantes->map(function($historial) {
+        if ($estudiantes->isEmpty()) {
+            return abort(404, 'No se encontraron estudiantes para ese grado y sección.');
+        }
+
+        $listado = $estudiantes->map(function ($historial) {
             return [
-                'id_estudiante' => $historial->estudiante->id_estudiante,
                 'nie' => $historial->estudiante->nie,
                 'nombre' => $historial->estudiante->persona->nombre,
                 'apellido' => $historial->estudiante->persona->apellido,
@@ -476,54 +519,21 @@ class ReportesController extends Controller
             ];
         });
 
-        return response()->json([
-            'message' => 'Consulta realizada correctamente.',
-            'total' => $result->count(),
-            'estudiantes' => $result
-        ]);
+        // Cargar logo (opcional)
+        $path = public_path('images/logo.jpg');
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+        // Generar PDF con vista
+        return Pdf::loadView('reportes.listado_estudiantes', [
+            'estudiantes' => $listado,
+            'grado' => $estudiantes->first()->grado,
+            'seccion' => $seccion,
+            'logoBase64' => $logoBase64,
+            'fecha' => Carbon::now()->format('d/m/Y'),
+        ])->stream('listado_estudiantes_grado_' . $id_grado . '_seccion_' . $seccion . '.pdf');
     }
-
-public function generarListadoEstudiantesPorGradoSeccion($id_grado, $seccion)
-{
-    if (!$id_grado || !$seccion) {
-        return abort(400, 'Debe proporcionar un grado y una sección.');
-    }
-
-    $estudiantes = HistorialEstudiante::with(['estudiante.persona', 'grado.seccion'])
-        ->where('id_grado', $id_grado)
-        ->whereHas('grado.seccion', function($query) use ($seccion) {
-            $query->where('seccion', $seccion);
-        })
-        ->get();
-
-    if ($estudiantes->isEmpty()) {
-        return abort(404, 'No se encontraron estudiantes para ese grado y sección.');
-    }
-
-    $listado = $estudiantes->map(function ($historial) {
-        return [
-            'nie' => $historial->estudiante->nie,
-            'nombre' => $historial->estudiante->persona->nombre,
-            'apellido' => $historial->estudiante->persona->apellido,
-            'estado' => $historial->estado,
-        ];
-    });
-
-    // Cargar logo (opcional)
-    $path = public_path('images/logo.jpg');
-    $type = pathinfo($path, PATHINFO_EXTENSION);
-    $data = file_get_contents($path);
-    $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-
-    // Generar PDF con vista
-    return Pdf::loadView('reportes.listado_estudiantes', [
-        'estudiantes' => $listado,
-        'grado' => $estudiantes->first()->grado,
-        'seccion' => $seccion,
-        'logoBase64' => $logoBase64,
-        'fecha' => Carbon::now()->format('d/m/Y'),
-    ])->stream('listado_estudiantes_grado_' . $id_grado . '_seccion_' . $seccion . '.pdf');
-}
 
 
 

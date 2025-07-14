@@ -30,6 +30,8 @@ return [
 
     'env' => env('APP_ENV', 'production'),
     'api_secret_key' => env('API_SECRET_KEY', 'T2A93v8*!v5Uk1a5|&,x1MQuBvJ|m,HQ2%I!.7^'),
+    'nota_minima_basica' => env('PROMEDIO_APROBADO_BASICA', 5),
+    'nota_minima_media' => env('PROMEDIO_APROBADO_MEDIA', 6),
 
     /*
     |--------------------------------------------------------------------------

@@ -15,22 +15,46 @@ class RangoFechaNotaController extends Controller
 
     public function update(Request $request, $id = null)
     {
-        // Validar los datos recibidos
+        // Validar los datos
         $validated = $request->validate([
             'id_periodo' => 'required',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date',
         ]);
 
-        // Ajustar las fechas para incluir hora
-        $validated['fecha_inicio'] = Carbon::parse($validated['fecha_inicio'])->startOfDay(); // 00:00:00
-        $validated['fecha_fin'] = Carbon::parse($validated['fecha_fin'])->endOfDay();   
+        // Ajustar fechas al inicio y fin del día
+        $validated['fecha_inicio'] = Carbon::parse($validated['fecha_inicio'])->startOfDay();
+        $validated['fecha_fin'] = Carbon::parse($validated['fecha_fin'])->endOfDay();
 
+        // Validación 1: Verifica si ya existe otro registro con el mismo id_periodo
+        $existeMismoPeriodo = RangoFechaNota::where('id_periodo', $validated['id_periodo'])
+            ->when($id, fn($q) => $q->where('id_rango', '!=', $id))
+            ->exists();
+
+        if ($existeMismoPeriodo) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Ya existe un registro con este periodo. Este periodo ya fue asignado a otro rango.'
+            ], 200);
+        }
+
+        // Validación 2: Verifica si ya existe otro registro con las mismas fechas
+        $existeMismoRango = RangoFechaNota::where('fecha_inicio', $validated['fecha_inicio'])
+            ->where('fecha_fin', $validated['fecha_fin'])
+            ->when($id, fn($q) => $q->where('id_rango', '!=', $id))
+            ->exists();
+
+        if ($existeMismoRango) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Ya existe un registro con estas fechas.'
+            ], 200);
+        }
+
+        // Si pasa validación, buscar o crear el registro
         if ($id !== null) {
-            // Buscar el rango por ID
             $rango = RangoFechaNota::find($id);
         } else {
-            // No se pasó ID, buscar un rango que coincida exactamente con id_periodo y fechas (o crear uno nuevo)
             $rango = RangoFechaNota::where('id_periodo', $validated['id_periodo'])
                 ->where('fecha_inicio', $validated['fecha_inicio'])
                 ->where('fecha_fin', $validated['fecha_fin'])
@@ -38,18 +62,17 @@ class RangoFechaNotaController extends Controller
         }
 
         if ($rango) {
-            // Si existe, actualizarlo
             $rango->update($validated);
             $mensaje = 'Rango actualizado correctamente';
         } else {
-            // Si no existe, crear uno nuevo
             $rango = RangoFechaNota::create($validated);
             $mensaje = 'Rango creado correctamente';
         }
 
         return response()->json([
+            'error' => false,
             'message' => $mensaje,
-            'request' => $request->all()
+            'request' => $validated
         ], 200);
     }
 

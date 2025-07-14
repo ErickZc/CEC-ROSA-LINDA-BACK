@@ -16,7 +16,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class NotaController extends Controller
 {
     public function allNotas(){
-        return Nota::all();
+        return Nota::all()->paginate(10);
     }
 
     public function getFormularioData()

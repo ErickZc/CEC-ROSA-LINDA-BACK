@@ -16,7 +16,7 @@
     <div class="header">
         <img src="{{ $logoBase64 }}" class="logo" alt="Logo">
         <h2>Listado de Estudiantes</h2>
-        <p>Grado: {{ $grado->nombre }}, Sección: {{ $seccion }}</p>
+        <p>Grado: {{ $grado->grado }}, Sección: {{ $seccion }}</p>
         <p>Fecha de generación: {{ $fecha }}</p>
     </div>
 

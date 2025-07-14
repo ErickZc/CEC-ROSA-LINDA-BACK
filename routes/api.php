@@ -193,7 +193,6 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
     Route::get('/boletas/grado/{id_grado}', [ReportesController::class, 'mostrarBoletaNotas']);
     Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
     Route::get('/reportes_estudiantes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'getEstudiantesPorGradoSeccion']);
-    Route::get('/reportes_notas/{id_grado}/{id_materia}/{id_periodo}/{turno}', [ReportesController::class, 'generarReporteNotasPDF']);
     Route::get('/reportes_inscritos/{id_grado}/{seccion}', [ReportesController::class, 'generarListadoEstudiantesPorGradoSeccion']);
 
     // Rutas para la gestión de rango de fechas de los periodos
