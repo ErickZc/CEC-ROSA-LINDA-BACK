@@ -121,7 +121,17 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -100%);
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .nombre-reporte2 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 0%);
             font-size: 14px;
             font-weight: bold;
             text-align: center;
@@ -132,7 +142,8 @@
 <body>
     <div style="position: relative; margin-bottom: 5px; height: 65px;">
         <img src="images/logo.jpg" alt="Logo" style="height: 65px; position: absolute; left: 0; top: 0;">
-        <div class="nombre-reporte">Reporte de Notas</div>
+        <div class="nombre-reporte">Complejo Educativo Colonia Rosa Linda</div>
+        <div class="nombre-reporte2">Reporte de Notas</div>
     </div>
 
     <table>
