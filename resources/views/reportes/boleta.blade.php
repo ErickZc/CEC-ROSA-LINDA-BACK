@@ -78,9 +78,10 @@
         <thead>
             <tr>
                 <th>Componente plan estudio</th>
-                @for($i = 1; $i <= ($isBachillerato ? 4 : 3); $i++)
-                    <th>Periodo {{ $i }}</th>
-                @endfor
+                <th>Periodo 1</th>
+                <th>Periodo 2</th>
+                <th>Periodo 3</th>
+                <th>Periodo 4</th>
                 <th>Nota Final</th>
                 <th>Estado</th>
             </tr>
@@ -91,28 +92,27 @@
                     $p1 = $registros->firstWhere('id_periodo', 1);
                     $p2 = $registros->firstWhere('id_periodo', 2);
                     $p3 = $registros->firstWhere('id_periodo', 3);
-                    $p4 = $isBachillerato ? $registros->firstWhere('id_periodo', 4) : null;
+                    $p4 = $registros->firstWhere('id_periodo', 4);
 
-                    $totalPeriodos = $isBachillerato ? 4 : 3;
+                    $totalPeriodos = 4;
 
                     $sumaNotas = 
                         ($p1?->promedio ?? 0) + 
                         ($p2?->promedio ?? 0) + 
                         ($p3?->promedio ?? 0) + 
-                        ($isBachillerato ? ($p4?->promedio ?? 0) : 0);
+                        ($p4?->promedio ?? 0);
 
                     $promedio = $sumaNotas / $totalPeriodos;
 
-                    $estado = $promedio >= 5 ? 'Aprobado' : 'Reprobado';
+                    $minimo = $isBachillerato ? 6 : 5;
+                    $estado = $promedio >= $minimo ? 'Aprobado' : 'Reprobado';
                 @endphp
                 <tr>
                     <td>{{ $materiaNombre }}</td>
                     <td>{{ number_format($p1?->promedio ?? 0, 1) }}</td>
                     <td>{{ number_format($p2?->promedio ?? 0, 1) }}</td>
                     <td>{{ number_format($p3?->promedio ?? 0, 1) }}</td>
-                    @if($isBachillerato)
-                        <td>{{ number_format($p4?->promedio ?? 0, 2) }}</td>
-                    @endif
+                    <td>{{ number_format($p4?->promedio ?? 0, 1) }}</td>
                     <td>{{ number_format($promedio, 1) }}</td>
                     <td>{{ $estado }}</td>
                 </tr>

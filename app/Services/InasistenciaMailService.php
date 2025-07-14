@@ -11,7 +11,7 @@ class InasistenciaMailService
 {
     public function enviarCorreos()
     {
-        setlocale(LC_TIME, 'es_ES.UTF-8'); // Para sistemas Unix/Linux
+        setlocale(LC_TIME, 'es_ES.UTF-8');
         Carbon::setLocale('es');
         $hoy = Carbon::now('America/El_Salvador');
 

@@ -31,12 +31,20 @@ class EstudianteController extends Controller
         $estudiantes = Estudiante::with(['persona', 'responsableEstudiantes.responsable.persona'])->get();
         return $estudiantes;
     }
-    
-     public function allEstudiantes()
+
+    public function allEstudiantes()
     {
         return Estudiante::all();
     }
 
+    public function getEstudentUsers()
+    {
+        $estudiantes = Estudiante::with('persona')
+            ->where('estado', 'ACTIVO')
+            ->get();
+
+        return response()->json($estudiantes);
+    }
 
     public function enviarNotasAllGradoResponsable(Request $request)
     {
@@ -52,14 +60,31 @@ class EstudianteController extends Controller
         $enviados = 0;
         $no_enviados = [];
 
+        $promedioFinal = 0;
+
+        $id_ciclo = DB::table('Materia')
+            ->where('nombre_materia', $materia)
+            ->where('estado', $estado)
+            ->value('id_ciclo');
+
+        if ($id_ciclo === 1 || $id_ciclo === 2 || $id_ciclo === 3) {
+            $promedioFinal = 5.0; // Promedio mínimo para aprobar en los ciclos 1, 2 y 3 (BASICA)
+            $promedioFinal = floatval($promedioFinal);
+        } else if ($id_ciclo === 4) {
+            $promedioFinal = 6.0; // Promedio mínimo para aprobar en los ciclos 4 (BACHILLERATO)
+            $promedioFinal = floatval($promedioFinal);
+        } else {
+            return response()->json(['error' => 'Ciclo no válido'], 400);
+        }
+
         $anioActual = date('Y');
-        
+
         // Validar que se reciban los datos necesarios
         if (!$grado || !$materia || !$periodo || !$estudiantesConNota || !is_array($estudiantesConNota)) {
             return response()->json(['error' => 'Todos los campos son obligatorios y estudiantesConNota debe ser un array'], 400);
         }
 
-        
+
         foreach ($estudiantesConNota as $item) {
             try {
 
@@ -100,7 +125,7 @@ class EstudianteController extends Controller
                     ->first();
 
 
-            
+
                 if ($responsable && $responsable->correo) {
                     $nombreEstudiante = trim($estudiante['nombre'] ?? '') . ' ' . trim($estudiante['apellido'] ?? '');
                     $nombreResponsable = trim($responsable->nombre ?? '') . ' ' . trim($responsable->apellido ?? '');
@@ -168,30 +193,42 @@ class EstudianteController extends Controller
                                         </thead>
                                         <tbody>';
 
-                        foreach ($notas as $n) {
+                    foreach ($notas as $n) {
 
-                            
-                            $promedioRaw = $n['promedio'] ?? null;
+                        $act1 = floatval($n['actividad1'] ?? 0);
+                        $act2 = floatval($n['actividad2'] ?? 0);
+                        $act3 = floatval($n['actividad3'] ?? 0);
+                        $actividadCotidiana = ($act1 + $act2 + $act3) / 3;
 
-                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
-                                    $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
-                                } else {
-                                    $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
-                                }
-                            
-                            $htmlContent .= '
+                        $actividadInt = floatval($n['actividadInt'] ?? 0);
+                        $examen = floatval($n['examen'] ?? 0);
+
+                        $promedioCalculado = round(
+                            ($actividadCotidiana * 0.35) + ($actividadInt * 0.35) + ($examen * 0.30),
+                            2
+                        );
+
+                        //$promedioRaw = floatval($n['promedio']) ?? 0.0;
+
+                        if ($promedioCalculado >= $promedioFinal) {
+                            $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
+                        } else {
+                            $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
+                        }
+
+                        $htmlContent .= '
                                 <tr style="background-color: #ffffff;">
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad1'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad2'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
-                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . number_format($promedioCalculado, 2, '.', '') . '</strong></td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
                                 </tr>';
-                        }
+                    }
 
-                        $htmlContent .= '
+                    $htmlContent .= '
                                         </tbody>
                                     </table>
                                 </div>
@@ -216,7 +253,7 @@ class EstudianteController extends Controller
                             </div>';
 
 
-                    
+
 
 
                     // Enviar correo
@@ -226,7 +263,7 @@ class EstudianteController extends Controller
 
                             if ($correoDestino) {
                                 $message->to($correoDestino)
-                                        ->subject("Notas de $nombreEstudiante - $periodo");
+                                    ->subject("Notas de $nombreEstudiante - $periodo");
                             }
                         });
 
@@ -244,9 +281,8 @@ class EstudianteController extends Controller
 
 
                     $enviados++;
-                } 
-
-            }  catch (\Exception $e) {
+                }
+            } catch (\Exception $e) {
                 $no_enviados[] = [
                     'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
                     'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
@@ -262,10 +298,10 @@ class EstudianteController extends Controller
         }
 
         return response()->json([
-                'message' => 'Correos enviados',
-                'total_enviados' => $enviados,
-                'no_enviados' => $no_enviados
-        ]);  
+            'message' => 'Correos enviados',
+            'total_enviados' => $enviados,
+            'no_enviados' => $no_enviados
+        ]);
     }
 
     public function enviarNotasAllGradoPeriodoCiclo(Request $request)
@@ -275,10 +311,15 @@ class EstudianteController extends Controller
         $date = Carbon::now('America/El_Salvador');
 
         $periodo = $request->id_periodo;
+
+        $texto_periodo = DB::table('Periodo')
+            ->where('id_periodo', $periodo)
+            ->value('periodo');
+
         $ciclo = $request->id_ciclo;
 
         // Validar que se reciban los datos necesarios
-        if (!$ciclo || !$periodo ) {
+        if (!$ciclo || !$periodo) {
             return response()->json(['error' => 'Todos los campos son obligatorios'], 400);
         }
 
@@ -290,7 +331,7 @@ class EstudianteController extends Controller
         if (empty($resultados)) {
             return response()->json(['message' => 'No hay datos disponibles.'], 404);
         }
-    
+
         $agrupado = [];
 
         foreach ($resultados as $fila) {
@@ -331,23 +372,32 @@ class EstudianteController extends Controller
                             </p>
                         </div>
 
-                        <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto;">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                                <thead style="background-color: #4f46e5; color: white;">
-                                    <tr>
-                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Asignatura</th>
-                                        <th style="padding: 12px; border: 1px solid #e5e7eb;">Promedio</th>
+                        <div style="max-width: 800px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; text-align: center;">
+                                <thead>
+                                    <tr style="background-color:  #000039;color:#ffffff;  text-align: center;" >
+                                        <th style="padding:14px 12px;font-weight:600; font-size: 20px;" colspan="8"> Promedio Final - ' . $texto_periodo . '</th>
+                                    </tr>
+                                    <tr style="background-color: #000039; color: #ffffff;">';
+
+                foreach ($info['notas'] as $materia => $nota) {
+                    $htmlContent .= '
+                                        <th style="padding: 14px 12px; font-weight: 600;">' . htmlspecialchars($materia) . '</th>';
+                }
+
+                $htmlContent .= '
                                     </tr>
                                 </thead>
-                                <tbody>';
-                                foreach ($info['notas'] as $materia => $nota) {
-                                    $htmlContent .= '
-                                    <tr style="background-color: #f9fafb;">
-                                        <td style="padding: 12px; border: 1px solid #e5e7eb;">' . htmlspecialchars($materia) . '</td>
-                                        <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">' . number_format($nota, 2) . '</td>
-                                    </tr>';
-                                }
-                                $htmlContent .= '
+                                <tbody>
+                                    <tr style="background-color:#fff; color: #374151; text-decoration: overline; font-weight: bold; ">';
+
+                foreach ($info['notas'] as $materia => $nota) {
+                    $htmlContent .= '
+                                        <td style="padding: 12px 12px; border-top: 1px solid #e5e7eb;">' . number_format($nota, 2) . '</td>';
+                }
+
+                $htmlContent .= '
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -364,7 +414,7 @@ class EstudianteController extends Controller
 
                 Mail::html($htmlContent, function ($message) use ($info, $date) {
                     $message->to($info['correo'])
-                            ->subject("Notas de {$info['estudiante']} - " . $date->translatedFormat('F Y'));
+                        ->subject("Notas de {$info['estudiante']} - " . $date->translatedFormat('F Y'));
                 });
             } catch (\Exception $e) {
                 Log::error("Error al enviar correo a " . $info['correo'] . ": " . $e->getMessage());
@@ -372,7 +422,6 @@ class EstudianteController extends Controller
         }
 
         return response()->json(['message' => 'Correos enviados con éxito.']);
-
     }
 
     public function enviarNotasGradoResponsableFiltrado(Request $request)
@@ -392,14 +441,31 @@ class EstudianteController extends Controller
         $enviados = 0;
         $no_enviados = [];
 
+        $promedioFinal = 0;
+
+        $id_ciclo = DB::table('Materia')
+            ->where('nombre_materia', $materia)
+            ->where('estado', $estado)
+            ->value('id_ciclo');
+
+        if ($id_ciclo === 1 || $id_ciclo === 2 || $id_ciclo === 3) {
+            $promedioFinal = 5.0; // Promedio mínimo para aprobar en los ciclos 1, 2 y 3 (BASICA)
+            //$promedioFinal = floatval($promedioFinal);
+        } else if ($id_ciclo === 4) {
+            $promedioFinal = 6.0; // Promedio mínimo para aprobar en los ciclos 4 (BACHILLERATO)
+            //$promedioFinal = floatval($promedioFinal);
+        } else {
+            return response()->json(['error' => 'Ciclo no válido'], 400);
+        }
+
         $anioActual = date('Y');
-        
+
         // Validar que se reciban los datos necesarios
         if (!$grado || !$materia || !$periodo || !$estudiantesConNota || !is_array($estudiantesConNota)) {
             return response()->json(['error' => 'Todos los campos son obligatorios y estudiantesConNota debe ser un array'], 400);
         }
 
-        
+
         foreach ($estudiantesConNota as $item) {
             try {
 
@@ -425,15 +491,15 @@ class EstudianteController extends Controller
                     continue;
                 }
 
-                    $nombreEstudiante = trim($estudiante['nombre'] ?? '') . ' ' . trim($estudiante['apellido'] ?? '');
-                    $nombreResponsable = trim($responsableNombre ?? '') . ' ' . trim($responsableApellido ?? '');
-                    $materia = is_string($materia) ? $materia : json_encode($materia);
-                    $grado = is_string($grado) ? $grado : json_encode($grado);
-                    $periodo = is_string($periodo) ? $periodo : json_encode($periodo);
+                $nombreEstudiante = trim($estudiante['nombre'] ?? '') . ' ' . trim($estudiante['apellido'] ?? '');
+                $nombreResponsable = trim($responsableNombre ?? '') . ' ' . trim($responsableApellido ?? '');
+                $materia = is_string($materia) ? $materia : json_encode($materia);
+                $grado = is_string($grado) ? $grado : json_encode($grado);
+                $periodo = is_string($periodo) ? $periodo : json_encode($periodo);
 
 
-                    // Armar contenido del correo
-                    $htmlContent = '
+                // Armar contenido del correo
+                $htmlContent = '
                         <div style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; padding: 20px;">
 
                             <div style="margin-bottom: 20px;">
@@ -491,30 +557,42 @@ class EstudianteController extends Controller
                                         </thead>
                                         <tbody>';
 
-                        foreach ($notas as $n) {
+                foreach ($notas as $n) {
 
-                            
-                            $promedioRaw = $n['promedio'] ?? null;
+                    $act1 = floatval($n['actividad1'] ?? 0);
+                    $act2 = floatval($n['actividad2'] ?? 0);
+                    $act3 = floatval($n['actividad3'] ?? 0);
+                    $actividadCotidiana = ($act1 + $act2 + $act3) / 3;
 
-                                if (is_numeric($promedioRaw) && floatval($promedioRaw) >= 6.0) {
-                                    $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
-                                } else {
-                                    $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
-                                }
-                            
-                            $htmlContent .= '
+                    $actividadInt = floatval($n['actividadInt'] ?? 0);
+                    $examen = floatval($n['examen'] ?? 0);
+
+                    $promedioCalculado = round(
+                        ($actividadCotidiana * 0.35) + ($actividadInt * 0.35) + ($examen * 0.30),
+                        2
+                    );
+
+                    //$promedioRaw = floatval($n['promedio']) ?? 0.0;
+
+                    if ($promedioCalculado >= $promedioFinal) {
+                        $estadoEstudiante = '<span style="background-color: #d1fae5; color: #065f46; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Aprobado</span>';
+                    } else {
+                        $estadoEstudiante = '<span style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">Reprobado</span>';
+                    }
+
+                    $htmlContent .= '
                                 <tr style="background-color: #ffffff;">
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad1'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad2'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividad3'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['actividadInt'] ?? '-') . '</td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . ($n['examen'] ?? '-') . '</td>
-                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . ($n['promedio'] ?? '-') . '</strong></td>
+                                    <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;"><strong>' . number_format($promedioCalculado, 2, '.', '') . '</strong></td>
                                     <td style="padding: 12px 16px; border: 1px solid #e5e7eb; text-align: center;">' . $estadoEstudiante . '</td>
                                 </tr>';
-                        }
+                }
 
-                        $htmlContent .= '
+                $htmlContent .= '
                                         </tbody>
                                     </table>
                                 </div>
@@ -538,27 +616,26 @@ class EstudianteController extends Controller
                                 </p>
                             </div>';
 
-                    // Enviar correo
-                    try {
-                        Mail::html($htmlContent, function ($message) use ($responsableCorreo, $nombreEstudiante, $periodo) {
-                            if (!empty($responsableCorreo)) {
-                                $message->to($responsableCorreo)
-                                        ->subject("Notas de $nombreEstudiante - $periodo");
-                            }
-                        });
+                // Enviar correo
+                try {
+                    Mail::html($htmlContent, function ($message) use ($responsableCorreo, $nombreEstudiante, $periodo) {
+                        if (!empty($responsableCorreo)) {
+                            $message->to($responsableCorreo)
+                                ->subject("Notas de $nombreEstudiante - $periodo");
+                        }
+                    });
 
-                        $enviados++;
-                    } catch (\Exception $ex) {
-                        $no_enviados[] = [
-                            'id_estudiante' => $estudiante['id_estudiante'],
-                            'nombre' => $nombreEstudiante,
-                            'motivo' => 'Fallo dentro de Mail::html: ' . $ex->getMessage()
-                        ];
+                    $enviados++;
+                } catch (\Exception $ex) {
+                    $no_enviados[] = [
+                        'id_estudiante' => $estudiante['id_estudiante'],
+                        'nombre' => $nombreEstudiante,
+                        'motivo' => 'Fallo dentro de Mail::html: ' . $ex->getMessage()
+                    ];
 
-                        Log::error("Fallo al enviar correo para $nombreEstudiante: " . $ex->getMessage());
-                    }
-                
-            }  catch (\Exception $e) {
+                    Log::error("Fallo al enviar correo para $nombreEstudiante: " . $ex->getMessage());
+                }
+            } catch (\Exception $e) {
                 $no_enviados[] = [
                     'id_estudiante' => $item['estudiante']['id_estudiante'] ?? null,
                     'nombre' => ($item['estudiante']['nombre'] ?? '-') . ' ' . ($item['estudiante']['apellido'] ?? '-'),
@@ -574,10 +651,10 @@ class EstudianteController extends Controller
         }
 
         return response()->json([
-                'message' => 'Correos enviados',
-                'total_enviados' => $enviados,
-                'no_enviados' => $no_enviados
-        ]);  
+            'message' => 'Correos enviados',
+            'total_enviados' => $enviados,
+            'no_enviados' => $no_enviados
+        ]);
     }
 
     public function index(Request $request)
@@ -610,7 +687,7 @@ class EstudianteController extends Controller
             ->join('Responsable_Estudiante', 'Responsable.id_responsable', '=', 'Responsable_Estudiante.id_responsable')
             ->join('Estudiante', 'Estudiante.id_estudiante', '=', 'Responsable_Estudiante.id_estudiante')
             ->join('Persona', 'Persona.id_persona', '=', 'Estudiante.id_persona')
-            ->select('Estudiante.id_estudiante','Estudiante.nie','Persona.nombre', 'Persona.apellido')
+            ->select('Estudiante.id_estudiante', 'Estudiante.nie', 'Persona.nombre', 'Persona.apellido')
             ->where('Responsable.id_persona', $idPersona)
             ->get();
 
@@ -673,7 +750,6 @@ class EstudianteController extends Controller
                 'estudiante_id' => $estudiante->id_estudiante,
                 'responsables' => $responsables
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Ocurrió un error inesperado: ' . $e->getMessage()
@@ -717,7 +793,6 @@ class EstudianteController extends Controller
             return response()->json([
                 'estudiantes' => $estudiantes,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Ocurrió un error inesperado: ' . $e->getMessage()
@@ -911,16 +986,16 @@ class EstudianteController extends Controller
         $historiales = HistorialEstudiante::whereHas('grado.seccion', function ($query) use ($idSeccion) {
             $query->where('id_seccion', $idSeccion);
         })
-        ->with(['estudiante.persona'])
-        ->get();
+            ->with(['estudiante.persona'])
+            ->get();
 
-        $estudiantes = $historiales->map(function($historial) {
-        // Buscar notas que coincidan con el historial actual
-        $notas = Nota::where('id_historial', $historial->id_historial)->get();
-        
+        $estudiantes = $historiales->map(function ($historial) {
+            // Buscar notas que coincidan con el historial actual
+            $notas = Nota::where('id_historial', $historial->id_historial)->get();
+
             return [
                 'estudiante' => $historial->estudiante,
-                'notas' => $notas->map(function($nota) {
+                'notas' => $notas->map(function ($nota) {
                     return [
                         'id_nota' => $nota,
                         'periodo' => $periodo = Periodo::where('id_periodo', $nota->id_periodo)->first(),
@@ -1110,8 +1185,8 @@ class EstudianteController extends Controller
                 'rol' => 'ADMINISTRADOR',
                 'total_secciones' => $secciones->unique('id_seccion')->count(),
                 'secciones' => $secciones->unique('id_seccion')->values(),
-                'grados' => $grados->unique(fn ($item) => $item['id_grado'])
-                    ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+                'grados' => $grados->unique(fn($item) => $item['id_grado'])
+                    ->sortBy(fn($item) => $ordenGrados[$item['grado']] ?? 99)
                     ->values(),
                 'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
             ]);
@@ -1164,8 +1239,8 @@ class EstudianteController extends Controller
                 'rol' => 'COORDINADOR',
                 'total_secciones' => $secciones->unique('id_seccion')->count(),
                 'secciones' => $secciones->unique('id_seccion')->values(),
-                'grados' => $grados->unique(fn ($item) => $item['id_grado'])
-                    ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+                'grados' => $grados->unique(fn($item) => $item['id_grado'])
+                    ->sortBy(fn($item) => $ordenGrados[$item['grado']] ?? 99)
                     ->values(),
                 'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
             ]);
@@ -1224,8 +1299,8 @@ class EstudianteController extends Controller
             'rol' => 'DOCENTE',
             'total_secciones' => $secciones->unique('id_seccion')->count(),
             'secciones' => $secciones->unique('id_seccion')->values(),
-            'grados' => $grados->unique(fn ($item) => $item['id_grado'])
-                ->sortBy(fn ($item) => $ordenGrados[$item['grado']] ?? 99)
+            'grados' => $grados->unique(fn($item) => $item['id_grado'])
+                ->sortBy(fn($item) => $ordenGrados[$item['grado']] ?? 99)
                 ->values(),
             'materias' => $materias->unique('id_materia')->sortBy('nombre_materia')->values()
         ]);
@@ -1399,13 +1474,13 @@ class EstudianteController extends Controller
     public function reporteEstudiantes($id_grado, $id_materia, $id_seccion)
     {
         $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-        ->whereHas('grado.seccion', function($query) use ($id_seccion) {
-            $query->where('id_seccion', $id_seccion);
-        })
-        ->with(['estudiante.persona'])
-        ->get();
-        
-        $estudiantes = $historiales->map(function($historial) use ($id_materia) {
+            ->whereHas('grado.seccion', function ($query) use ($id_seccion) {
+                $query->where('id_seccion', $id_seccion);
+            })
+            ->with(['estudiante.persona'])
+            ->get();
+
+        $estudiantes = $historiales->map(function ($historial) use ($id_materia) {
             $notas = Nota::where('id_historial', $historial->id_historial)
                 ->where('id_materia', $id_materia)
                 ->with('periodo')
@@ -1418,7 +1493,7 @@ class EstudianteController extends Controller
                 'id_estudiante' => $estudiante->id_estudiante ?? null,
                 'nombre' => $persona->nombre ?? 'Sin nombre',
                 'apellido' => $persona->apellido ?? 'Sin apellido',
-                'notas' => $notas->map(function($nota) {
+                'notas' => $notas->map(function ($nota) {
                     return [
                         'id_nota' => $nota->id_nota,
                         'actividad1' => $nota->actividad1,
@@ -1445,7 +1520,7 @@ class EstudianteController extends Controller
             })->toArray(),
 
 
-            'datos' => $estudiantes->map(function($e) {
+            'datos' => $estudiantes->map(function ($e) {
                 // Asegura que 'notas' exista y sea una colección válida
                 $promedios = collect($e['notas'] ?? [])
                     ->pluck('promedio')
@@ -1457,7 +1532,7 @@ class EstudianteController extends Controller
             })->toArray()
         ];
 
-    return response()->json([
+        return response()->json([
             'id_grado' => $id_grado,
             'id_materia' => $id_materia,
             'id_seccion' => $id_seccion,
@@ -1467,196 +1542,196 @@ class EstudianteController extends Controller
         ]);
     }
 
-// public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_periodo)
-// {
-//     // Obtener grado para extraer su id_seccion
-//     $grado = Grado::find($id_grado);
-//     if (!$grado) {
-//         return response()->json(['error' => 'Grado no encontrado.'], 404);
-//     }
+    // public function estudiantesConNotasFiltrados($id_grado, $id_materia, $id_periodo)
+    // {
+    //     // Obtener grado para extraer su id_seccion
+    //     $grado = Grado::find($id_grado);
+    //     if (!$grado) {
+    //         return response()->json(['error' => 'Grado no encontrado.'], 404);
+    //     }
 
-//     $id_seccion = $grado->id_seccion;
+    //     $id_seccion = $grado->id_seccion;
 
-//     $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-//         ->where('estado', 'CURSANDO')
-//         ->whereHas('grado', function($query) use ($id_seccion) {
-//             $query->where('id_seccion', $id_seccion);
-//         })
-//         ->with(['estudiante.persona'])
-//         ->get();
+    //     $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+    //         ->where('estado', 'CURSANDO')
+    //         ->whereHas('grado', function($query) use ($id_seccion) {
+    //             $query->where('id_seccion', $id_seccion);
+    //         })
+    //         ->with(['estudiante.persona'])
+    //         ->get();
 
-//     $estudiantes = $historiales->map(function($historial) use ($id_materia, $id_periodo) {
-//         $notas = Nota::where('id_historial', $historial->id_historial)
-//             ->where('id_materia', $id_materia)
-//             ->with('periodo')
-//             ->get();
+    //     $estudiantes = $historiales->map(function($historial) use ($id_materia, $id_periodo) {
+    //         $notas = Nota::where('id_historial', $historial->id_historial)
+    //             ->where('id_materia', $id_materia)
+    //             ->with('periodo')
+    //             ->get();
 
-//         $notasFiltradas = $notas->filter(function($nota) use ($id_periodo) {
-//             return $nota->id_periodo == $id_periodo;
-//         });
+    //         $notasFiltradas = $notas->filter(function($nota) use ($id_periodo) {
+    //             return $nota->id_periodo == $id_periodo;
+    //         });
 
-//         if ($notasFiltradas->isEmpty()) {
-//             $notasFiltradas = collect([
-//                 (object)[
-//                     'id_nota' => null,
-//                     'actividad1' => null,
-//                     'actividad2' => null,
-//                     'actividad3' => null,
-//                     'actividadInt' => null,
-//                     'examen' => null,
-//                     'promedio' => null,
-//                     'periodo' => null,
-//                 ]
-//             ]);
-//         }
+    //         if ($notasFiltradas->isEmpty()) {
+    //             $notasFiltradas = collect([
+    //                 (object)[
+    //                     'id_nota' => null,
+    //                     'actividad1' => null,
+    //                     'actividad2' => null,
+    //                     'actividad3' => null,
+    //                     'actividadInt' => null,
+    //                     'examen' => null,
+    //                     'promedio' => null,
+    //                     'periodo' => null,
+    //                 ]
+    //             ]);
+    //         }
 
-//         return [
-//             'estudiante' => [
-//                 'id_estudiante' => $historial->estudiante->id_estudiante,
-//                 'nombre' => $historial->estudiante->persona->nombre,
-//                 'apellido' => $historial->estudiante->persona->apellido,
-//             ],
-//             'notas' => $notasFiltradas->map(function($nota) {
-//                 return [
-//                     'id_nota' => $nota->id_nota,
-//                     'actividad1' => $nota->actividad1,
-//                     'actividad2' => $nota->actividad2,
-//                     'actividad3' => $nota->actividad3,
-//                     'actividadInt' => $nota->actividadInt,
-//                     'examen' => $nota->examen,
-//                     'promedio' => $nota->promedio,
-//                     'periodo' => $nota->periodo ? [
-//                         'id_periodo' => $nota->periodo->id_periodo,
-//                         'periodo' => $nota->periodo->periodo,
-//                         'estado' => $nota->periodo->estado,
-//                     ] : null,
-//                 ];
-//             }),
-//         ];
-//     })->values();
+    //         return [
+    //             'estudiante' => [
+    //                 'id_estudiante' => $historial->estudiante->id_estudiante,
+    //                 'nombre' => $historial->estudiante->persona->nombre,
+    //                 'apellido' => $historial->estudiante->persona->apellido,
+    //             ],
+    //             'notas' => $notasFiltradas->map(function($nota) {
+    //                 return [
+    //                     'id_nota' => $nota->id_nota,
+    //                     'actividad1' => $nota->actividad1,
+    //                     'actividad2' => $nota->actividad2,
+    //                     'actividad3' => $nota->actividad3,
+    //                     'actividadInt' => $nota->actividadInt,
+    //                     'examen' => $nota->examen,
+    //                     'promedio' => $nota->promedio,
+    //                     'periodo' => $nota->periodo ? [
+    //                         'id_periodo' => $nota->periodo->id_periodo,
+    //                         'periodo' => $nota->periodo->periodo,
+    //                         'estado' => $nota->periodo->estado,
+    //                     ] : null,
+    //                 ];
+    //             }),
+    //         ];
+    //     })->values();
 
-//     return response()->json([
-//         'id_grado' => $id_grado,
-//         'id_materia' => $id_materia,
-//         'id_seccion' => $id_seccion, // se devuelve aunque no se reciba como parámetro
-//         'id_periodo' => $id_periodo,
-//         'total_estudiantes' => $estudiantes->count(),
-//         'estudiantes' => $estudiantes,
-//     ]);
-// }
+    //     return response()->json([
+    //         'id_grado' => $id_grado,
+    //         'id_materia' => $id_materia,
+    //         'id_seccion' => $id_seccion, // se devuelve aunque no se reciba como parámetro
+    //         'id_periodo' => $id_periodo,
+    //         'total_estudiantes' => $estudiantes->count(),
+    //         'estudiantes' => $estudiantes,
+    //     ]);
+    // }
 
 
-public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_materia, $id_periodo, $turno)
-{
-    // Obtener el parámetro de búsqueda, si existe
-    $search = $request->input('search', '');
+    public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_materia, $id_periodo, $turno)
+    {
+        // Obtener el parámetro de búsqueda, si existe
+        $search = $request->input('search', '');
 
-    // Validar que el grado con ese turno exista
-    $grado = Grado::where('id_grado', $id_grado)
-        ->where('turno', strtoupper($turno))
-        ->with('seccion')
-        ->first();
+        // Validar que el grado con ese turno exista
+        $grado = Grado::where('id_grado', $id_grado)
+            ->where('turno', strtoupper($turno))
+            ->with('seccion')
+            ->first();
 
-    // Si no se encuentra el grado, retornar una respuesta vacía pero estructurada
-    if (!$grado) {
-        return response()->json([
-            'id_grado' => $id_grado,
-            'grado' => null,
-            'id_seccion' => null,
-            'seccion' => null,
-            'turno' => $turno,
-            'id_materia' => $id_materia,
-            'id_periodo' => $id_periodo,
-            'total_estudiantes' => 0,
-            'pagination' => [],
-            'estudiantes' => [],
-            'message' => 'Grado con el turno no tiene estudiantes asociados.'
-        ]);
-    }
-
-    $id_seccion = $grado->id_seccion;
-
-    // Obtener los estudiantes paginados con filtro de búsqueda
-    $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-        ->where('estado', 'CURSANDO')
-        ->whereHas('estudiante.persona', function ($query) use ($search) {
-            $query->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('apellido', 'like', "%{$search}%");
-        })
-        ->with(['estudiante.persona'])
-        ->paginate(10); // Paginar los resultados
-
-    // Transformar los resultados paginados manteniendo la paginación
-    $estudiantesTransformados = collect($historiales->items())->transform(function ($historial) use ($id_materia, $id_periodo) {
-        $notas = Nota::where('id_historial', $historial->id_historial)
-            ->where('id_materia', $id_materia)
-            ->with('periodo')
-            ->get();
-
-        $notasFiltradas = $notas->filter(function ($nota) use ($id_periodo) {
-            return $nota->id_periodo == $id_periodo;
-        });
-
-        if ($notasFiltradas->isEmpty()) {
-            $notasFiltradas = collect([
-                (object)[
-                    'id_nota' => null,
-                    'actividad1' => null,
-                    'actividad2' => null,
-                    'actividad3' => null,
-                    'actividadInt' => null,
-                    'examen' => null,
-                    'promedio' => null,
-                    'periodo' => null,
-                ]
+        // Si no se encuentra el grado, retornar una respuesta vacía pero estructurada
+        if (!$grado) {
+            return response()->json([
+                'id_grado' => $id_grado,
+                'grado' => null,
+                'id_seccion' => null,
+                'seccion' => null,
+                'turno' => $turno,
+                'id_materia' => $id_materia,
+                'id_periodo' => $id_periodo,
+                'total_estudiantes' => 0,
+                'pagination' => [],
+                'estudiantes' => [],
+                'message' => 'Grado con el turno no tiene estudiantes asociados.'
             ]);
         }
 
-        return [
-            'estudiante' => [
-                'id_historial' => $historial->id_historial, // clave única para Vue
-                'id_estudiante' => $historial->estudiante->id_estudiante,
-                'nombre' => $historial->estudiante->persona->nombre,
-                'apellido' => $historial->estudiante->persona->apellido,
-            ],
-            'notas' => $notasFiltradas->map(function ($nota) {
-                return [
-                    'id_nota' => $nota->id_nota ?? null,
-                    'actividad1' => number_format($nota->actividad1 ?? 0, 2, '.', ''),
-                    'actividad2' => number_format($nota->actividad2 ?? 0, 2, '.', ''),
-                    'actividad3' => number_format($nota->actividad3 ?? 0, 2, '.', ''),
-                    'actividadInt' => number_format($nota->actividadInt ?? 0, 2, '.', ''),
-                    'examen' => number_format($nota->examen ?? 0, 2, '.', ''),
-                    'promedio' => number_format($nota->promedio ?? 0, 2, '.', ''),
-                    'periodo' => $nota->periodo ? [
-                        'id_periodo' => $nota->periodo->id_periodo,
-                        'periodo' => $nota->periodo->periodo,
-                        'estado' => $nota->periodo->estado,
-                    ] : null,
-                ];
-            }),
-        ];
-    });
+        $id_seccion = $grado->id_seccion;
 
-    return response()->json([
-        'id_grado' => $grado->id_grado,
-        'grado' => $grado->grado,
-        'id_seccion' => $grado->id_seccion,
-        'seccion' => $grado->seccion->seccion,
-        'turno' => $grado->turno,
-        'id_materia' => $id_materia,
-        'id_periodo' => $id_periodo,
-        'total_estudiantes' => $historiales->total(),
-        'pagination' => [
-            'current_page' => $historiales->currentPage(),
-            'from' => $historiales->firstItem(),
-            'to' => $historiales->lastItem(),
-            'total' => $historiales->total(),
-            'last_page' => $historiales->lastPage(),
-        ],
-        'estudiantes' => $estudiantesTransformados,
-    ]);
-}
+        // Obtener los estudiantes paginados con filtro de búsqueda
+        $historiales = HistorialEstudiante::where('id_grado', $id_grado)
+            ->where('estado', 'CURSANDO')
+            ->whereHas('estudiante.persona', function ($query) use ($search) {
+                $query->where('nombre', 'like', "%{$search}%")
+                    ->orWhere('apellido', 'like', "%{$search}%");
+            })
+            ->with(['estudiante.persona'])
+            ->paginate(10); // Paginar los resultados
+
+        // Transformar los resultados paginados manteniendo la paginación
+        $estudiantesTransformados = collect($historiales->items())->transform(function ($historial) use ($id_materia, $id_periodo) {
+            $notas = Nota::where('id_historial', $historial->id_historial)
+                ->where('id_materia', $id_materia)
+                ->with('periodo')
+                ->get();
+
+            $notasFiltradas = $notas->filter(function ($nota) use ($id_periodo) {
+                return $nota->id_periodo == $id_periodo;
+            });
+
+            if ($notasFiltradas->isEmpty()) {
+                $notasFiltradas = collect([
+                    (object)[
+                        'id_nota' => null,
+                        'actividad1' => null,
+                        'actividad2' => null,
+                        'actividad3' => null,
+                        'actividadInt' => null,
+                        'examen' => null,
+                        'promedio' => null,
+                        'periodo' => null,
+                    ]
+                ]);
+            }
+
+            return [
+                'estudiante' => [
+                    'id_historial' => $historial->id_historial, // clave única para Vue
+                    'id_estudiante' => $historial->estudiante->id_estudiante,
+                    'nombre' => $historial->estudiante->persona->nombre,
+                    'apellido' => $historial->estudiante->persona->apellido,
+                ],
+                'notas' => $notasFiltradas->map(function ($nota) {
+                    return [
+                        'id_nota' => $nota->id_nota ?? null,
+                        'actividad1' => number_format($nota->actividad1 ?? 0, 2, '.', ''),
+                        'actividad2' => number_format($nota->actividad2 ?? 0, 2, '.', ''),
+                        'actividad3' => number_format($nota->actividad3 ?? 0, 2, '.', ''),
+                        'actividadInt' => number_format($nota->actividadInt ?? 0, 2, '.', ''),
+                        'examen' => number_format($nota->examen ?? 0, 2, '.', ''),
+                        'promedio' => number_format($nota->promedio ?? 0, 2, '.', ''),
+                        'periodo' => $nota->periodo ? [
+                            'id_periodo' => $nota->periodo->id_periodo,
+                            'periodo' => $nota->periodo->periodo,
+                            'estado' => $nota->periodo->estado,
+                        ] : null,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json([
+            'id_grado' => $grado->id_grado,
+            'grado' => $grado->grado,
+            'id_seccion' => $grado->id_seccion,
+            'seccion' => $grado->seccion->seccion,
+            'turno' => $grado->turno,
+            'id_materia' => $id_materia,
+            'id_periodo' => $id_periodo,
+            'total_estudiantes' => $historiales->total(),
+            'pagination' => [
+                'current_page' => $historiales->currentPage(),
+                'from' => $historiales->firstItem(),
+                'to' => $historiales->lastItem(),
+                'total' => $historiales->total(),
+                'last_page' => $historiales->lastPage(),
+            ],
+            'estudiantes' => $estudiantesTransformados,
+        ]);
+    }
 
 
 
@@ -1666,7 +1741,7 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
     {
         // Obtener historiales filtrados por grado y sección
         $historiales = HistorialEstudiante::where('id_grado', $id_grado)
-            ->whereHas('grado.seccion', function($query) use ($id_seccion) {
+            ->whereHas('grado.seccion', function ($query) use ($id_seccion) {
                 $query->where('id_seccion', $id_seccion);
             })
             ->with(['estudiante.persona'])
@@ -1694,134 +1769,134 @@ public function estudiantesConNotasFiltrados(Request $request, $id_grado, $id_ma
 
 
     public function estudiantesRepetidores()
-{
-    // 1. Obtener los historiales de estudiantes que repiten grado (tienen estado REPROBADO y CURSANDO)
-    $repetidores = HistorialEstudiante::whereIn('estado', ['REPROBADO', 'CURSANDO'])
-        // ->select('id_estudiante', 'id_grado')
-        // ->groupBy('id_estudiante', 'id_grado')
-        // ->havingRaw('COUNT(DISTINCT estado) = 2')
-        ->get();
+    {
+        // 1. Obtener los historiales de estudiantes que repiten grado (tienen estado REPROBADO y CURSANDO)
+        $repetidores = HistorialEstudiante::whereIn('estado', ['REPROBADO', 'CURSANDO'])
+            // ->select('id_estudiante', 'id_grado')
+            // ->groupBy('id_estudiante', 'id_grado')
+            // ->havingRaw('COUNT(DISTINCT estado) = 2')
+            ->get();
 
-    // 2. Traer los historiales completos de esos estudiantes y grados, con estudiante, persona y notas filtradas
-    // $historiales = HistorialEstudiante::with(['estudiante.persona', 'notas.periodo'])
-    //     ->whereIn(function($query) use ($repetidores) {
-    //         $query->selectRaw("CONCAT(id_estudiante,'-',id_grado)")
-    //             ->from('Historial_Estudiante')
-    //             ->whereIn('id_estudiante', $repetidores->pluck('id_estudiante'))
-    //             ->whereIn('id_grado', $repetidores->pluck('id_grado'));
-    //     }, $repetidores->map(fn($r) => $r->id_estudiante . '-' . $r->id_grado)->toArray())
-    //     ->get();
+        // 2. Traer los historiales completos de esos estudiantes y grados, con estudiante, persona y notas filtradas
+        // $historiales = HistorialEstudiante::with(['estudiante.persona', 'notas.periodo'])
+        //     ->whereIn(function($query) use ($repetidores) {
+        //         $query->selectRaw("CONCAT(id_estudiante,'-',id_grado)")
+        //             ->from('Historial_Estudiante')
+        //             ->whereIn('id_estudiante', $repetidores->pluck('id_estudiante'))
+        //             ->whereIn('id_grado', $repetidores->pluck('id_grado'));
+        //     }, $repetidores->map(fn($r) => $r->id_estudiante . '-' . $r->id_grado)->toArray())
+        //     ->get();
 
-    // 3. Agrupar por estudiante y grado
-    // $agrupados = $historiales->groupBy(function($h) {
-    //     return $h->id_estudiante . '-' . $h->id_grado;
-    // });
+        // 3. Agrupar por estudiante y grado
+        // $agrupados = $historiales->groupBy(function($h) {
+        //     return $h->id_estudiante . '-' . $h->id_grado;
+        // });
 
-    // 4. Mapear para devolver estructura con notas reprobadas (<7)
-    // $estudiantes = $agrupados->map(function($grupo) {
-    //     $historial = $grupo->first();
-    //     $estudiante = $historial->estudiante;
-    //     $persona = $estudiante->persona;
+        // 4. Mapear para devolver estructura con notas reprobadas (<7)
+        // $estudiantes = $agrupados->map(function($grupo) {
+        //     $historial = $grupo->first();
+        //     $estudiante = $historial->estudiante;
+        //     $persona = $estudiante->persona;
 
-    //     $notasReprobadas = $grupo->flatMap(function($h) {
-    //         return $h->notas->filter(fn($n) => $n->promedio < 7);
-    //     });
+        //     $notasReprobadas = $grupo->flatMap(function($h) {
+        //         return $h->notas->filter(fn($n) => $n->promedio < 7);
+        //     });
 
-    //     return [
-    //         'id_estudiante' => $estudiante->id_estudiante,
-    //         'nombre' => $persona->nombre,
-    //         'apellido' => $persona->apellido,
-    //         'notas' => $notasReprobadas->map(function($nota) {
-    //             return [
-    //                 'id_nota' => $nota->id_nota,
-    //                 'actividad1' => $nota->actividad1,
-    //                 'actividad2' => $nota->actividad2,
-    //                 'actividad3' => $nota->actividad3,
-    //                 'actividadInt' => $nota->actividadInt,
-    //                 'examen' => $nota->examen,
-    //                 'promedio' => $nota->promedio,
-    //                 'periodo' => $nota->periodo ? [
-    //                     'id_periodo' => $nota->periodo->id_periodo,
-    //                     'periodo' => $nota->periodo->periodo,
-    //                     'estado' => $nota->periodo->estado,
-    //                 ] : null,
-    //             ];
-    //         })->values()
-    //     ];
-    // })->values();
+        //     return [
+        //         'id_estudiante' => $estudiante->id_estudiante,
+        //         'nombre' => $persona->nombre,
+        //         'apellido' => $persona->apellido,
+        //         'notas' => $notasReprobadas->map(function($nota) {
+        //             return [
+        //                 'id_nota' => $nota->id_nota,
+        //                 'actividad1' => $nota->actividad1,
+        //                 'actividad2' => $nota->actividad2,
+        //                 'actividad3' => $nota->actividad3,
+        //                 'actividadInt' => $nota->actividadInt,
+        //                 'examen' => $nota->examen,
+        //                 'promedio' => $nota->promedio,
+        //                 'periodo' => $nota->periodo ? [
+        //                     'id_periodo' => $nota->periodo->id_periodo,
+        //                     'periodo' => $nota->periodo->periodo,
+        //                     'estado' => $nota->periodo->estado,
+        //                 ] : null,
+        //             ];
+        //         })->values()
+        //     ];
+        // })->values();
 
-    return response()->json([
-        // 'total_repetidores' => $estudiantes->count(),
-        // 'estudiantes' => $estudiantes,
-        'repetidores' => $repetidores
-    ]);
-}
-
-
+        return response()->json([
+            // 'total_repetidores' => $estudiantes->count(),
+            // 'estudiantes' => $estudiantes,
+            'repetidores' => $repetidores
+        ]);
+    }
 
 
-    
-public function estudiantesRepetidores2()
-{
-    // 1. Cargar todos los historiales con relaciones necesarias
-    $historiales = HistorialEstudiante::with(['estudiante.persona'])->get();
 
-    // 2. Agrupar por estudiante y grado
-    $agrupados = $historiales->groupBy(function ($historial) {
-        return $historial->id_estudiante . '-' . $historial->id_grado;
-    });
 
-    // 3. Filtrar solo estudiantes que repiten (REPROBADO + CURSANDO)
-    $repetidores = $agrupados->filter(function ($grupo) {
-        $estados = $grupo->pluck('estado')
-            ->map(fn($estado) => strtoupper(trim($estado)))
-            ->unique();
 
-        return $estados->contains('REPROBADO') && $estados->contains('CURSANDO');
-    });
+    public function estudiantesRepetidores2()
+    {
+        // 1. Cargar todos los historiales con relaciones necesarias
+        $historiales = HistorialEstudiante::with(['estudiante.persona'])->get();
 
-    // 4. Mapear resultados con notas reprobadas
-    $estudiantes = $repetidores->map(function ($grupo) {
-        $historial = $grupo->first(); // Tomamos uno del grupo para obtener estudiante/persona
-        $estudiante = $historial->estudiante;
-        $persona = $estudiante->persona;
-
-        // Obtener todas las notas con promedio < 7 de todos los historiales de ese estudiante-grado
-        $notasReprobadas = $grupo->flatMap(function ($h) {
-            return Nota::where('id_historial', $h->id_historial)
-                // ->where('promedio', '<', 7)
-                ->with('periodo')
-                ->get();
+        // 2. Agrupar por estudiante y grado
+        $agrupados = $historiales->groupBy(function ($historial) {
+            return $historial->id_estudiante . '-' . $historial->id_grado;
         });
 
-        return [
-            'id_estudiante' => $estudiante->id_estudiante,
-            'nombre' => $persona->nombre,
-            'apellido' => $persona->apellido,
-            'notas' => $notasReprobadas->map(function ($nota) {
-                return [
-                    'id_nota' => $nota->id_nota,
-                    'actividad1' => $nota->actividad1,
-                    'actividad2' => $nota->actividad2,
-                    'actividad3' => $nota->actividad3,
-                    'actividadInt' => $nota->actividadInt,
-                    'examen' => $nota->examen,
-                    'promedio' => $nota->promedio,
-                    'periodo' => $nota->periodo ? [
-                        'id_periodo' => $nota->periodo->id_periodo,
-                        'periodo' => $nota->periodo->periodo,
-                        'estado' => $nota->periodo->estado,
-                    ] : null,
-                ];
-            })->values()
-        ];
-    })->values();
+        // 3. Filtrar solo estudiantes que repiten (REPROBADO + CURSANDO)
+        $repetidores = $agrupados->filter(function ($grupo) {
+            $estados = $grupo->pluck('estado')
+                ->map(fn($estado) => strtoupper(trim($estado)))
+                ->unique();
 
-    return response()->json([
-        'total_repetidores' => $estudiantes->count(),
-        'estudiantes' => $estudiantes,
-    ]);
-}
+            return $estados->contains('REPROBADO') && $estados->contains('CURSANDO');
+        });
+
+        // 4. Mapear resultados con notas reprobadas
+        $estudiantes = $repetidores->map(function ($grupo) {
+            $historial = $grupo->first(); // Tomamos uno del grupo para obtener estudiante/persona
+            $estudiante = $historial->estudiante;
+            $persona = $estudiante->persona;
+
+            // Obtener todas las notas con promedio < 7 de todos los historiales de ese estudiante-grado
+            $notasReprobadas = $grupo->flatMap(function ($h) {
+                return Nota::where('id_historial', $h->id_historial)
+                    // ->where('promedio', '<', 7)
+                    ->with('periodo')
+                    ->get();
+            });
+
+            return [
+                'id_estudiante' => $estudiante->id_estudiante,
+                'nombre' => $persona->nombre,
+                'apellido' => $persona->apellido,
+                'notas' => $notasReprobadas->map(function ($nota) {
+                    return [
+                        'id_nota' => $nota->id_nota,
+                        'actividad1' => $nota->actividad1,
+                        'actividad2' => $nota->actividad2,
+                        'actividad3' => $nota->actividad3,
+                        'actividadInt' => $nota->actividadInt,
+                        'examen' => $nota->examen,
+                        'promedio' => $nota->promedio,
+                        'periodo' => $nota->periodo ? [
+                            'id_periodo' => $nota->periodo->id_periodo,
+                            'periodo' => $nota->periodo->periodo,
+                            'estado' => $nota->periodo->estado,
+                        ] : null,
+                    ];
+                })->values()
+            ];
+        })->values();
+
+        return response()->json([
+            'total_repetidores' => $estudiantes->count(),
+            'estudiantes' => $estudiantes,
+        ]);
+    }
 
 
 
@@ -1893,7 +1968,7 @@ public function estudiantesRepetidores2()
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-   public function show($id_historial)
+    public function show($id_historial)
     {
         // Buscar el estudiante por su ID (id_historial)
         $historial = HistorialEstudiante::with('estudiante.persona')->find($id_historial);
