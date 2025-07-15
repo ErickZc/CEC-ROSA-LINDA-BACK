@@ -34,6 +34,7 @@ class PermisosController extends Controller
                     $q->where('id_persona', $responsable);
                 });
             })
+            ->orderBy('fecha_inicio', 'desc')
             ->paginate(10);
 
         return response()->json($permisos);
@@ -79,6 +80,7 @@ class PermisosController extends Controller
                     $q->whereIn('id_grado', $grados);
                 });
             })
+            ->orderBy('fecha_inicio', 'desc')
             ->paginate(10);
 
         return response()->json($permisos);
@@ -104,6 +106,7 @@ class PermisosController extends Controller
                     });
                 });
             })
+            ->orderBy('fecha_inicio', 'desc')
             ->paginate(10);
 
         return response()->json($permisos);

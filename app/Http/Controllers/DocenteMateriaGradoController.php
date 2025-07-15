@@ -313,7 +313,7 @@ class DocenteMateriaGradoController extends Controller
             ->leftJoin('Persona as p', 'p.id_persona', '=', 'd.id_persona')
             ->where(function ($query) {
                 $query->where(function ($q) {
-                    $q->whereIn('g.grado', ['Segundo', 'Tercero'])->where('m.id_ciclo', 1);
+                    $q->whereIn('g.grado', ['Primero','Segundo', 'Tercero'])->where('m.id_ciclo', 1);
                 })->orWhere(function ($q) {
                     $q->whereIn('g.grado', ['Cuarto', 'Quinto', 'Sexto'])->where('m.id_ciclo', 2);
                 })->orWhere(function ($q) {
