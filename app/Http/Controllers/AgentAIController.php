@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\ArchivoBaseConocimiento;
+use Illuminate\Support\Carbon;
 
 class AgentAIController extends Controller
 {
@@ -50,11 +51,17 @@ class AgentAIController extends Controller
             return response()->json(['error' => 'El documento es obligatorio'], 400);
         }
 
+        setlocale(LC_TIME, 'es_ES.UTF-8');
+        Carbon::setLocale('es');
+        $date = Carbon::now('America/El_Salvador');
+        $timestamp = $date->format('Y-m-d H:i:s');
+
         try {
             $response = Http::post('https://n8n-production-1b6f.up.railway.app/webhook/uploaddocsrag', [
                 'filename' => $filename,
                 'username' => $username,
                 'document' => $document,
+                'fecha' => $timestamp,
             ]);
 
             if ($response->successful()) {
