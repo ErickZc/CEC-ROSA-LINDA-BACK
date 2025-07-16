@@ -1650,10 +1650,12 @@ class EstudianteController extends Controller
         }
 
         $id_seccion = $grado->id_seccion;
+        $anioActual = Carbon::now()->year;
 
         // Obtener los estudiantes paginados con filtro de búsqueda
         $historiales = HistorialEstudiante::where('id_grado', $id_grado)
             ->where('estado', 'CURSANDO')
+            ->where('anio', $anioActual)
             ->whereHas('estudiante.persona', function ($query) use ($search) {
                 $query->where('nombre', 'like', "%{$search}%")
                     ->orWhere('apellido', 'like', "%{$search}%");

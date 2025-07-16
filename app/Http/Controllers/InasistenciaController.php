@@ -156,6 +156,7 @@ class InasistenciaController extends Controller
                 });
             })
             ->whereBetween('fecha', [$desde, $hasta])
+            ->orderBy('fecha', 'desc')
             ->paginate(10);
 
         return response()->json($inasistencias);
@@ -195,6 +196,7 @@ class InasistenciaController extends Controller
                 });
             })
             ->whereBetween('fecha', [$desde, $hasta])
+            ->orderBy('fecha', 'desc')
             ->paginate(10);
 
         return response()->json($inasistencias);
@@ -228,6 +230,7 @@ class InasistenciaController extends Controller
                 });
             })
             ->whereBetween('fecha', [$desde, $hasta])
+            ->orderBy('fecha', 'desc')
             ->paginate(10);
 
         // Devolver los usuarios paginados
