@@ -210,6 +210,7 @@ Route::middleware(['auth:api', 'api.key'])->group(function () {
 
     //Agente para responsable
     Route::post('/agentai/consulta', [AgentAIController::class, 'consulta']);
+    Route::post('/agentai/consultaDesingThinking', [AgentAIController::class, 'consultaDesingThinking']);
     Route::post('/agentai/importacion', [AgentAIController::class, 'importarDocumentos']);
     Route::post('/agentai/eliminacion', [AgentAIController::class, 'eliminarDocumentos']);
     Route::get('/agentai/listarDocumentos', [AgentAIController::class, 'listarDocumentos']);
