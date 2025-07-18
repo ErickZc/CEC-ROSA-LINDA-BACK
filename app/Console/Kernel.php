@@ -22,7 +22,19 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('inasistencias:enviar')
             ->weekdays()
-            ->at('09:10');
+            ->at('09:00');
+
+        $schedule->command('inasistencias:enviar')
+            ->weekdays()
+            ->at('10:15');
+
+        $schedule->command('inasistencias:enviar')
+            ->weekdays()
+            ->at('10:25');
+        
+        $schedule->command('inasistencias:enviar')
+            ->weekdays()
+            ->at('10:35');
 
         $schedule->command('inasistencias:enviar')
             ->weekdays()
@@ -30,7 +42,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('notas:enviar')
             ->weekdays()
-            ->at('08:00');
+            ->at('10:30');
     }
 
     /**
