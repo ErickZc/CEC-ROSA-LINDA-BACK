@@ -35,7 +35,7 @@ class NotasMailService
                 'id_periodo' => $periodo->id_periodo,
                 'id_ciclo' => $cicloSeleccionado->id_ciclo,
             ]);
-
+            echo $cicloSeleccionado;
             $controller = app(EstudianteController::class);
             $controller->enviarNotasAllGradoPeriodoCiclo($request);
         }

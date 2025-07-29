@@ -40,6 +40,39 @@ class AgentAIController extends Controller
         }
     }
 
+    public function consultaPermisos(Request $request)
+    {
+        // Validación
+        $inputText = $request->input('input_text');
+        $sessionId = $request->input('session_id');
+        $id_persona = $request->input('id_persona');
+
+        if (!$inputText || !$sessionId) {
+            return response()->json(['error' => 'los campos de input_text y session_id son obligatorios'], 400);
+        }
+
+        try {
+            $response = Http::post('https://n8n-production-1b6f.up.railway.app/webhook/infopermisos', [
+                'input_text' => $inputText,
+                'session_id' => $sessionId,
+                'id_persona' => $id_persona
+            ]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'message' => 'Petición enviada correctamente.',
+                    'data' => $response->json()
+                ]);
+            } else {
+                return response()->json(['ERROR' => 'La respuesta del servidor n8n no fue exitosa'], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function consultaDesingThinking(Request $request)
     {
         // Validación
